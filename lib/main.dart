@@ -9,7 +9,11 @@ import 'core/providers.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp();
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint('Firebase não inicializado nesta plataforma: $e');
+  }
 
   // Inicializa localização em português para formatação de datas e horas
   await initializeDateFormatting('pt_BR', null);
@@ -18,12 +22,13 @@ Future<void> main() async {
   final container = ProviderContainer();
 
   // Inicializa notificações
-  final notificationService = container.read(notificationServiceProvider);
-  await notificationService.initialize();
-
-
-  // Inicia a sincronização de notificações
-  container.read(notificationSyncProvider);
+  try {
+    final notificationService = container.read(notificationServiceProvider);
+    await notificationService.initialize();
+    container.read(notificationSyncProvider);
+  } catch (e) {
+    debugPrint('Notificações não inicializadas nesta plataforma: $e');
+  }
 
   runApp(
     UncontrolledProviderScope(container: container, child: const VelixMedApp()),
