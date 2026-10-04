@@ -12,7 +12,20 @@
           "package_name": "com.velixmed.velix_med"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "914827383527-mtkdocncsged33d9roa0cflu71pensc5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.velixmed.velix_med",
+            "certificate_hash": "179645cc5bd4c6fbd17e23b05877dc828eba5a95"
+          }
+        },
+        {
+          "client_id": "914827383527-8ah6upg7vrikmet2fm3u9lt2m4fddbj8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAZ-Ds-pePmdXCW30ZzjL8n9F_tmbro8FM"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "914827383527-8ah6upg7vrikmet2fm3u9lt2m4fddbj8.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
