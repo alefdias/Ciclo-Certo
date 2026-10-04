@@ -13,7 +13,7 @@ Future<void> main() async {
 
   await Supabase.initialize(
     url: GoogleAuthKeys.supabaseUrl,
-    anonKey: GoogleAuthKeys.supabaseAnonKey,
+    publishableKey: GoogleAuthKeys.supabaseAnonKey,
   );
 
   // Inicializa localização em português para formatação de datas e horas

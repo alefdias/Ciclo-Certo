@@ -475,7 +475,7 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: DropdownButtonFormField<PharmaceuticalForm>(
-                          value: _form,
+                          initialValue: _form,
                           decoration: const InputDecoration(labelText: 'Forma'),
                           items: [
                             for (final f in PharmaceuticalForm.values)
@@ -583,7 +583,7 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   DropdownButtonFormField<ScheduleType>(
-                    value: _scheduleType,
+                    initialValue: _scheduleType,
                     decoration: const InputDecoration(labelText: 'Tipo de esquema'),
                     items: [
                       for (final st in ScheduleType.values)

@@ -57,7 +57,7 @@ abstract final class AppTheme {
           letterSpacing: -0.4,
         ),
       ),
-      cardTheme: const CardTheme(
+      cardTheme: const CardThemeData(
         color: AppColors.surface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,

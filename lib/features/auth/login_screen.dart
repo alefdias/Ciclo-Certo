@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../app/theme/app_colors.dart';
-import '../../core/widgets/app_widgets.dart';
 
 class GoogleAuthKeys {
   static const String supabaseUrl = 'https://kidpfkdxlhqzmpkvkjxh.supabase.co';

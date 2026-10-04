@@ -41,7 +41,7 @@ class _PrivacyLockScreenState extends State<PrivacyLockScreen> {
               children: [
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  activeColor: AppColors.violet,
+                  activeThumbColor: AppColors.violet,
                   title: const Text('Bloqueio por PIN', style: TextStyle(fontWeight: FontWeight.w600)),
                   subtitle: const Text('Exigir senha de 4 dígitos para entrar'),
                   value: _pinEnabled,
@@ -58,7 +58,7 @@ class _PrivacyLockScreenState extends State<PrivacyLockScreen> {
                 const Divider(),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  activeColor: AppColors.violet,
+                  activeThumbColor: AppColors.violet,
                   title: const Text('Desbloqueio por Biometria', style: TextStyle(fontWeight: FontWeight.w600)),
                   subtitle: const Text('Usar FaceID ou Impressão Digital'),
                   value: _biometricsEnabled,
@@ -73,7 +73,7 @@ class _PrivacyLockScreenState extends State<PrivacyLockScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              activeColor: AppColors.danger,
+              activeThumbColor: AppColors.danger,
               title: const Text('Ativar Modo Anônimo', style: TextStyle(fontWeight: FontWeight.w600)),
               subtitle: const Text('Seus dados não sairão do celular, nem mesmo para backup local seguro.'),
               value: _stealthMode,
