@@ -197,7 +197,7 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
 
   DateTime _startDate = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
 
-  List<DoseTime> _times = [];
+  final List<DoseTime> _times = [];
   _PresetMedication? _identifiedPreset;
   bool _isLoading = false;
 
@@ -475,7 +475,8 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: DropdownButtonFormField<PharmaceuticalForm>(
-                          initialValue: _form,
+                          // ignore: deprecated_member_use
+                          value: _form,
                           decoration: const InputDecoration(labelText: 'Forma'),
                           items: [
                             for (final f in PharmaceuticalForm.values)
@@ -583,7 +584,8 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   DropdownButtonFormField<ScheduleType>(
-                    initialValue: _scheduleType,
+                    // ignore: deprecated_member_use
+                    value: _scheduleType,
                     decoration: const InputDecoration(labelText: 'Tipo de esquema'),
                     items: [
                       for (final st in ScheduleType.values)
