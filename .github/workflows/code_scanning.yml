@@ -59,7 +59,7 @@ jobs:
           languages: java # Analisa o código nativo Android
 
       - name: Build native code (Flutter)
-        run: flutter build apk --debug
+        run: flutter build apk --debug --android-skip-build-dependency-validation
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
