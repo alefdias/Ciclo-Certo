@@ -21,43 +21,59 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isAuthenticatingBiometrics = false;
   User? _currentUser;
 
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isRegistering = false;
+  bool _obscurePassword = true;
+
   @override
   void initState() {
     super.initState();
     _checkInitialAuth();
   }
 
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   Future<void> _checkInitialAuth() async {
-    final user = FirebaseAuth.instance.currentUser;
-    final hasLoggedInBefore =
-        await BiometricService.instance.hasLoggedInWithGoogle();
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      final hasLoggedInBefore =
+          await BiometricService.instance.hasLoggedInWithGoogle();
 
-    if (user != null && hasLoggedInBefore) {
-      final isAvailable =
-          await BiometricService.instance.isBiometricsAvailable();
-      final isLockEnabled =
-          await BiometricService.instance.isBiometricLockEnabled();
+      if (user != null && hasLoggedInBefore) {
+        final isAvailable =
+            await BiometricService.instance.isBiometricsAvailable();
+        final isLockEnabled =
+            await BiometricService.instance.isBiometricLockEnabled();
 
-      if (isAvailable && isLockEnabled) {
-        if (!mounted) return;
-        setState(() {
-          _currentUser = user;
-          _requiresBiometrics = true;
-          _isCheckingAuth = false;
-        });
+        if (isAvailable && isLockEnabled) {
+          if (!mounted) return;
+          setState(() {
+            _currentUser = user;
+            _requiresBiometrics = true;
+            _isCheckingAuth = false;
+          });
 
-        // Solicita biometria automaticamente assim que a tela terminar de renderizar
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _authenticateWithBiometrics();
-        });
-        return;
-      } else {
-        // Dispositivo sem biometria ou com biometria desativada: verifica rota
-        if (mounted) {
-          await _navigatePostAuth();
+          // Solicita biometria automaticamente assim que a tela terminar de renderizar
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _authenticateWithBiometrics();
+          });
+          return;
+        } else {
+          // Dispositivo sem biometria ou com biometria desativada: verifica rota
+          if (mounted) {
+            await _navigatePostAuth();
+          }
+          return;
         }
-        return;
       }
+    } catch (e) {
+      debugPrint('Aviso: Autenticação Firebase não disponível: $e');
     }
 
     if (!mounted) return;
@@ -127,6 +143,86 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Erro no login com Google: $e')),
+        );
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _signInWithApple() async {
+    setState(() => _isLoading = true);
+    try {
+      final appleProvider = OAuthProvider('apple.com');
+      appleProvider.addScope('email');
+      appleProvider.addScope('name');
+
+      await FirebaseAuth.instance.signInWithProvider(appleProvider);
+      await BiometricService.instance.markGoogleLoginCompleted();
+
+      if (mounted) {
+        await _navigatePostAuth();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro no login com Apple: $e')),
+        );
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _signInWithEmail() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, informe e-mail e senha.')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      if (_isRegistering) {
+        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+      } else {
+        await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+      }
+
+      await BiometricService.instance.markGoogleLoginCompleted();
+
+      if (mounted) {
+        await _navigatePostAuth();
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        String msg = 'Erro na autenticação: ${e.message}';
+        if (e.code == 'user-not-found' || e.code == 'invalid-credential') {
+          msg = 'E-mail ou senha incorretos.';
+        } else if (e.code == 'wrong-password') {
+          msg = 'Senha incorreta.';
+        } else if (e.code == 'email-already-in-use') {
+          msg = 'Este e-mail já está cadastrado. Alterne para entrar.';
+        } else if (e.code == 'weak-password') {
+          msg = 'A senha precisa ter no mínimo 6 caracteres.';
+        } else if (e.code == 'invalid-email') {
+          msg = 'E-mail em formato inválido.';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro: $e')),
         );
         setState(() => _isLoading = false);
       }
@@ -370,67 +466,214 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  /// Interface inicial para o primeiro login com Google
+  /// Interface inicial de login (E-mail/Senha, Google e Apple)
   Widget _buildInitialLoginUI() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Spacer(),
-        Center(
-          child: Image.asset(
-            'assets/icon/app_logo.png',
-            width: 104,
-            height: 104,
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 12),
+          Center(
+            child: Image.asset(
+              'assets/icon/app_logo.png',
+              width: 84,
+              height: 84,
+            ),
           ),
-        ),
-        const SizedBox(height: 24),
-        Text(
-          'Ciclo Certo :Lembrete',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                color: AppColors.violet,
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Sua rotina de saúde organizada.',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: AppColors.textSecondary,
-              ),
-        ),
-        const Spacer(),
+          const SizedBox(height: 14),
+          Text(
+            'Ciclo Certo :Lembrete',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  color: AppColors.violet,
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _isRegistering
+                ? 'Crie sua conta para começar'
+                : 'Sua rotina de saúde organizada',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+          ),
+          const SizedBox(height: 24),
 
-        if (_isLoading)
-          const Center(child: CircularProgressIndicator())
-        else
-          OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
+          // Campos de E-mail e Senha
+          TextField(
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(
+              labelText: 'E-mail',
+              hintText: 'exemplo@email.com',
+              prefixIcon: const Icon(Icons.email_outlined),
+              border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
-              side: const BorderSide(color: AppColors.border),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             ),
-            icon: const Icon(
-              Icons.g_mobiledata_rounded,
-              size: 32,
-              color: AppColors.textPrimary,
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: _passwordController,
+            obscureText: _obscurePassword,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _signInWithEmail(),
+            decoration: InputDecoration(
+              labelText: 'Senha',
+              hintText: 'Mínimo 6 caracteres',
+              prefixIcon: const Icon(Icons.lock_outline_rounded),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscurePassword
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                ),
+                onPressed: () =>
+                    setState(() => _obscurePassword = !_obscurePassword),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             ),
-            label: const Text(
-              'Entrar com Google',
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w600,
+          ),
+          const SizedBox(height: 18),
+
+          if (_isLoading)
+            const Center(child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: CircularProgressIndicator(),
+            ))
+          else ...[
+            // Botão Entrar / Cadastrar com E-mail
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.violet,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              onPressed: _signInWithEmail,
+              child: Text(
+                _isRegistering ? 'Cadastrar com E-mail' : 'Entrar com E-mail',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-            onPressed: _signInWithGoogle,
-          ),
-        const SizedBox(height: 32),
-      ],
+            const SizedBox(height: 8),
+
+            // Alternar entre Login e Cadastro
+            TextButton(
+              onPressed: () {
+                setState(() => _isRegistering = !_isRegistering);
+              },
+              child: Text(
+                _isRegistering
+                    ? 'Já tem uma conta? Entrar'
+                    : 'Não tem conta? Cadastre-se com e-mail',
+                style: const TextStyle(
+                  color: AppColors.violet,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Divisor
+            const Row(
+              children: [
+                Expanded(child: Divider()),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    'ou continue com',
+                    style: TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+                Expanded(child: Divider()),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Botão Google
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                side: const BorderSide(color: AppColors.border),
+              ),
+              icon: const Icon(
+                Icons.g_mobiledata_rounded,
+                size: 32,
+                color: AppColors.textPrimary,
+              ),
+              label: const Text(
+                'Continuar com Google',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              onPressed: _signInWithGoogle,
+            ),
+            const SizedBox(height: 10),
+
+            // Botão Apple
+            FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              icon: const Icon(
+                Icons.apple,
+                size: 24,
+                color: Colors.white,
+              ),
+              label: const Text(
+                'Continuar com Apple',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              onPressed: _signInWithApple,
+            ),
+            const SizedBox(height: 12),
+
+            // Opção para modo offline / desenvolvimento
+            TextButton(
+              onPressed: _navigatePostAuth,
+              child: const Text(
+                'Continuar como convidado (offline)',
+                style: TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 24),
+        ],
+      ),
     );
   }
 }
