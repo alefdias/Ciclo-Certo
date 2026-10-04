@@ -11,6 +11,8 @@ jobs:
   build:
     name: Build Release APK
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout code
@@ -39,3 +41,14 @@ jobs:
         with:
           name: velix-med-release.apk
           path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Publish to GitHub Releases
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Velix Med - APK Release (Mais recente)"
+          body: "APK Release compilado automaticamente pelo GitHub Actions."
+          files: build/app/outputs/flutter-apk/app-release.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
