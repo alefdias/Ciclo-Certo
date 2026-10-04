@@ -1,4 +1,4 @@
-package com.velixmed.velix_med
+package com.ciclocerto.app
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 
