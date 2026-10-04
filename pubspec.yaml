@@ -44,7 +44,11 @@ dependencies:
   uuid: ^4.6.0
   flutter_local_notifications: ^19.5.0
   timezone: ^0.10.1
-  supabase_flutter: ^2.15.4
+  firebase_core: ^4.15.0
+  firebase_auth: ^6.7.0
+  google_sign_in: ^6.2.2
+  local_auth: ^2.3.0
+  shared_preferences: ^2.5.3
 
 dev_dependencies:
   flutter_test:

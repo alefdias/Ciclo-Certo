@@ -1,9 +1,12 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../app/theme/app_colors.dart';
 import '../../core/widgets/app_widgets.dart';
+import '../../services/biometric_service.dart';
 
 /// Tela de Configurações e Preferências (§29).
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -20,12 +23,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Configurações')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 40),
         children: [
-          // Perfil Simples Local (§30)
+          // Perfil Conectado / Local (§30)
           AppCard(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -33,24 +38,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 CircleAvatar(
                   radius: 30,
                   backgroundColor: AppColors.violet.withValues(alpha: 0.15),
-                  child: const Icon(Icons.person_rounded,
-                      size: 34, color: AppColors.violet),
+                  backgroundImage: user?.photoURL != null
+                      ? NetworkImage(user!.photoURL!)
+                      : null,
+                  child: user?.photoURL == null
+                      ? const Icon(Icons.person_rounded,
+                          size: 34, color: AppColors.violet)
+                      : null,
                 ),
                 const SizedBox(width: 16),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Meu Tratamento',
-                        style: TextStyle(
+                        user?.displayName ?? 'Meu Tratamento',
+                        style: const TextStyle(
                             fontWeight: FontWeight.w700, fontSize: 17),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      SizedBox(height: 2),
+                      const SizedBox(height: 2),
                       Text(
-                        'Modo Offline · Dados locais',
-                        style: TextStyle(
+                        user?.email ?? 'Modo Offline · Dados locais',
+                        style: const TextStyle(
                             color: AppColors.textSecondary, fontSize: 13),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -194,6 +208,56 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ],
             ),
           ),
+          if (user != null) ...[
+            const SizedBox(height: 24),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.danger,
+                side: BorderSide(color: AppColors.danger.withValues(alpha: 0.3)),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              icon: const Icon(Icons.logout_rounded, size: 20),
+              label: const Text(
+                'Sair da conta Google',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              onPressed: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Sair da conta?'),
+                    content: const Text(
+                        'Ao sair, você precisará fazer um novo login com o Google.'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(false),
+                        child: const Text('Cancelar'),
+                      ),
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.danger),
+                        onPressed: () => Navigator.of(ctx).pop(true),
+                        child: const Text('Sair'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  await FirebaseAuth.instance.signOut();
+                  try {
+                    await GoogleSignIn().signOut();
+                  } catch (_) {}
+                  await BiometricService.instance.clearSession();
+                  if (context.mounted) {
+                    context.go('/login');
+                  }
+                }
+              },
+            ),
+          ],
         ],
       ),
     );

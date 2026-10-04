@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "914827383527",
+    "project_id": "velixmed",
+    "storage_bucket": "velixmed.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:914827383527:android:135a17c55266e138700842",
+        "android_client_info": {
+          "package_name": "com.velixmed.velix_med"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAZ-Ds-pePmdXCW30ZzjL8n9F_tmbro8FM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

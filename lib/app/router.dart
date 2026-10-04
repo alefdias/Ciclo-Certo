@@ -13,6 +13,7 @@ import '../features/settings/partner_sync_screen.dart';
 import '../features/stock/stock_screen.dart';
 import '../features/diary/diary_screen.dart';
 import '../features/auth/login_screen.dart';
+import '../features/auth/role_selection_screen.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey =
     GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -62,6 +63,11 @@ final appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/login',
       builder: (context, state) => const LoginScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/role-selection',
+      builder: (context, state) => const RoleSelectionScreen(),
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
