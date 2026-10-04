@@ -204,7 +204,7 @@ class _PartnerSyncScreenState extends ConsumerState<PartnerSyncScreen> {
         ),
         const SizedBox(height: 8),
         const Text(
-          'Peça para o seu parceiro(a) abrir o Velix Ciclo e escanear o QR Code abaixo para acompanhar suas fases do ciclo e apoiar sua rotina.',
+          'Peça para o seu parceiro(a) abrir o Ciclo Certo e escanear o QR Code abaixo para acompanhar suas fases do ciclo e apoiar sua rotina.',
           textAlign: TextAlign.center,
           style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
         ),

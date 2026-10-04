@@ -151,7 +151,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text(
-                            'Velix Ciclo: sincronização segura de dados com sua família.'),
+                            'Ciclo Certo :Lembrete: sincronização segura de dados com sua família.'),
                       ),
                     );
                   },
@@ -178,7 +178,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const SizedBox(height: 24),
 
-          const SectionTitle('Sobre o Velix Ciclo'),
+          const SectionTitle('Sobre o Ciclo Certo'),
           AppCard(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -194,7 +194,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Velix Ciclo é um aplicativo inteligente para gerenciamento e acompanhamento de ciclos menstruais, anticoncepcionais e rotina de saúde.',
+                  'Ciclo Certo :Lembrete é um aplicativo inteligente para gerenciamento e acompanhamento de ciclos menstruais, anticoncepcionais e rotina de saúde.',
                   style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                 ),
                 const SizedBox(height: 12),

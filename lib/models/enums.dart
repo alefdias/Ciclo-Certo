@@ -1,4 +1,4 @@
-/// Enums de domínio do Velix Ciclo.
+/// Enums de domínio do Ciclo Certo.
 ///
 /// São persistidos no banco pelo [name], portanto **não renomeie** valores
 /// existentes sem criar uma migração.
