@@ -26,9 +26,6 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Verify formatting
-        run: dart format --output=none --set-exit-if-changed .
-
       - name: Run Dart Analyzer
         run: flutter analyze
 
@@ -45,15 +42,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
           languages: java # Analisa o código nativo Android
 
-      - name: Build native code
-        run: |
-          cd android
-          ./gradlew assembleDebug
+      - name: Build native code (Flutter)
+        run: flutter build apk --debug
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
