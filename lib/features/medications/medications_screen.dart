@@ -37,13 +37,18 @@ class _MedicationsScreenState extends ConsumerState<MedicationsScreen> {
     final stocks = ref.watch(stocksProvider).valueOrNull ?? const [];
     final tByMed = {for (final t in treatments) t.medicationId: t};
     final sByMed = {for (final s in stocks) s.medicationId: s};
+    final isPartner = ref.watch(isPartnerModeProvider);
     final visible = meds.where((m) => _matches(m, tByMed[m.id])).toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Meus Métodos')),
-      floatingActionButton: _GradientFab(
-        onPressed: () => context.push('/add-medication'),
+      appBar: AppBar(
+        title: Text(isPartner ? 'Métodos Cadastrados' : 'Meus Métodos'),
       ),
+      floatingActionButton: isPartner
+          ? null
+          : _GradientFab(
+              onPressed: () => context.push('/add-medication'),
+            ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 100),
         children: [
@@ -56,10 +61,12 @@ class _MedicationsScreenState extends ConsumerState<MedicationsScreen> {
           ),
           const SizedBox(height: 18),
           if (visible.isEmpty)
-            const EmptyState(
+            EmptyState(
               icon: Icons.medication_outlined,
               title: 'Nenhum método cadastrado',
-              subtitle: 'Toque em + para adicionar.',
+              subtitle: isPartner
+                  ? 'Aguardando sua parceira cadastrar métodos.'
+                  : 'Toque em + para adicionar.',
             )
           else
             for (final m in visible) ...[

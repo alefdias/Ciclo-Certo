@@ -151,7 +151,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text(
-                            'Velix Med é 100% offline. Nenhum dado é compartilhado sem consentimento.'),
+                            'Velix Ciclo: sincronização segura de dados com sua família.'),
                       ),
                     );
                   },
@@ -178,7 +178,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const SizedBox(height: 24),
 
-          const SectionTitle('Sobre o Velix Med'),
+          const SectionTitle('Sobre o Velix Ciclo'),
           AppCard(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -187,14 +187,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 const VelixLogo(size: 20),
                 const SizedBox(height: 8),
                 const Text(
-                  'Seu tratamento organizado.',
+                  'Seu ciclo e saúde organizados.',
                   style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Velix Med é um aplicativo offline-first para gerenciamento e automatização de esquemas de medicação, ciclos e estoque.',
+                  'Velix Ciclo é um aplicativo inteligente para gerenciamento e acompanhamento de ciclos menstruais, anticoncepcionais e rotina de saúde.',
                   style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                 ),
                 const SizedBox(height: 12),

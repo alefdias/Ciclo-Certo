@@ -204,7 +204,7 @@ class VelixLogo extends StatelessWidget {
         Text('Velix ',
             style: TextStyle(
                 fontSize: size, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
-        Text('Med',
+        Text('Ciclo',
             style: TextStyle(fontSize: size, fontWeight: FontWeight.w800, color: AppColors.teal)),
       ],
     );

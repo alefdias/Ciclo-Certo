@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/enums.dart';
 import '../models/models.dart';
 import '../repositories/repositories.dart';
+import '../services/cloud_sync_service.dart';
 import '../services/dose_service.dart';
 import '../services/notification_service.dart';
 import '../services/schedule_engine/schedule_engine.dart';
+import '../services/user_profile_service.dart';
 import 'database/app_database.dart';
 
 // ---------------------------------------------------------------------------
@@ -14,7 +16,12 @@ import 'database/app_database.dart';
 
 final databaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
-  ref.onDispose(db.close);
+  ref.onDispose(() {
+    CloudSyncService.instance.stopListener();
+    db.close();
+  });
+  CloudSyncService.instance.startPartnerListener(db);
+  CloudSyncService.instance.syncWomanToCloud(db);
   return db;
 });
 
@@ -143,5 +150,30 @@ final notificationSyncProvider = Provider((ref) {
       notificationService.syncNotifications(next.value!);
     }
   }, fireImmediately: true);
+});
+
+/// Mantém a sincronização em nuvem ativa para casal
+final cloudSyncProvider = Provider((ref) {
+  final db = ref.watch(databaseProvider);
+
+  ref.listen(medicationsProvider, (previous, next) {
+    CloudSyncService.instance.syncWomanToCloud(db);
+  });
+  ref.listen(todayDosesProvider, (previous, next) {
+    CloudSyncService.instance.syncWomanToCloud(db);
+  });
+});
+
+/// Perfil do usuário atual (Mulher ou Parceiro)
+final userRoleProvider = StreamProvider<UserRole?>((ref) async* {
+  final initial = await UserProfileService.instance.getUserRole();
+  yield initial;
+  yield* UserProfileService.instance.roleStream;
+});
+
+/// Indica se o app está no Modo Parceiro (somente visualização)
+final isPartnerModeProvider = Provider<bool>((ref) {
+  final role = ref.watch(userRoleProvider).value;
+  return role == UserRole.partner;
 });
 

@@ -57,7 +57,7 @@ class BiometricService {
 
   /// Executa o diálogo nativo de autenticação biométrica
   Future<bool> authenticate({
-    String reason = 'Confirme sua impressão digital para entrar no Velix-Med',
+    String reason = 'Confirme sua impressão digital para entrar no Velix Ciclo',
   }) async {
     try {
       final isAvailable = await isBiometricsAvailable();

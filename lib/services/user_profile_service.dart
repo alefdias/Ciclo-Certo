@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum UserRole {
@@ -22,6 +23,9 @@ class UserProfileService {
   static const String _keyUserRole = 'user_profile_role';
   static const String _keyPartnerCode = 'paired_partner_code';
 
+  final _roleController = StreamController<UserRole?>.broadcast();
+  Stream<UserRole?> get roleStream => _roleController.stream;
+
   /// Retorna o papel selecionado do usuário, ou null se ainda não escolheu
   Future<UserRole?> getUserRole() async {
     final prefs = await SharedPreferences.getInstance();
@@ -35,6 +39,7 @@ class UserProfileService {
   Future<void> setUserRole(UserRole role) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyUserRole, role.name);
+    _roleController.add(role);
   }
 
   /// Salva o código da parceira conectado

@@ -73,6 +73,18 @@ extension DoseRecordRowX on DoseRecordRow {
       );
 }
 
+extension DoseRecordX on DoseRecord {
+  DoseRecordsCompanion toCompanion() => DoseRecordsCompanion.insert(
+        id: id,
+        treatmentId: treatmentId,
+        scheduledAt: scheduledAt,
+        takenAt: Value(takenAt),
+        status: status.name,
+        quantity: quantity,
+        note: Value(note),
+      );
+}
+
 extension StockRowX on StockRow {
   Stock toDomain() => Stock(
         medicationId: medicationId,

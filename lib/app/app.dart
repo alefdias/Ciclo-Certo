@@ -9,7 +9,7 @@ class VelixMedApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'Velix Med',
+      title: 'Velix Ciclo',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       routerConfig: appRouter,

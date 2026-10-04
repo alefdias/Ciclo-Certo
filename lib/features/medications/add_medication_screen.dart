@@ -182,6 +182,98 @@ const _kPresets = [
       pauseDays: 7,
     ),
   ),
+  _PresetMedication(
+    name: 'Tamisa 20',
+    concentration: '',
+    activeIngredient: 'Gestodeno + Etinilestradiol',
+    form: PharmaceuticalForm.tablet,
+    category: MedicationCategory.contraceptive,
+    stock: 21,
+    rule: ScheduleRule(
+      type: ScheduleType.cycle,
+      times: [DoseTime(8, 0)],
+      usageDays: 21,
+      pauseDays: 7,
+    ),
+  ),
+  _PresetMedication(
+    name: 'Elani Ciclo',
+    concentration: '',
+    activeIngredient: 'Drospirenona + Etinilestradiol',
+    form: PharmaceuticalForm.tablet,
+    category: MedicationCategory.contraceptive,
+    stock: 21,
+    rule: ScheduleRule(
+      type: ScheduleType.cycle,
+      times: [DoseTime(8, 0)],
+      usageDays: 21,
+      pauseDays: 7,
+    ),
+  ),
+  _PresetMedication(
+    name: 'Tantin',
+    concentration: '',
+    activeIngredient: 'Gestodeno + Etinilestradiol',
+    form: PharmaceuticalForm.tablet,
+    category: MedicationCategory.contraceptive,
+    stock: 24,
+    rule: ScheduleRule(
+      type: ScheduleType.cycle,
+      times: [DoseTime(8, 0)],
+      usageDays: 24,
+      pauseDays: 4,
+    ),
+  ),
+  _PresetMedication(
+    name: 'Dipirona',
+    concentration: '500 mg',
+    activeIngredient: 'Dipirona Monoidratada',
+    form: PharmaceuticalForm.tablet,
+    category: MedicationCategory.painFever,
+    stock: 20,
+    rule: ScheduleRule(
+      type: ScheduleType.asNeeded,
+      times: [],
+    ),
+  ),
+  _PresetMedication(
+    name: 'Ibuprofeno',
+    concentration: '600 mg',
+    activeIngredient: 'Ibuprofeno',
+    form: PharmaceuticalForm.tablet,
+    category: MedicationCategory.painFever,
+    stock: 20,
+    rule: ScheduleRule(
+      type: ScheduleType.asNeeded,
+      times: [],
+    ),
+  ),
+  _PresetMedication(
+    name: 'Paracetamol',
+    concentration: '750 mg',
+    activeIngredient: 'Paracetamol',
+    form: PharmaceuticalForm.tablet,
+    category: MedicationCategory.painFever,
+    stock: 20,
+    rule: ScheduleRule(
+      type: ScheduleType.asNeeded,
+      times: [],
+    ),
+  ),
+  _PresetMedication(
+    name: 'Amoxicilina',
+    concentration: '500 mg',
+    activeIngredient: 'Amoxicilina',
+    form: PharmaceuticalForm.capsule,
+    category: MedicationCategory.antibiotic,
+    stock: 21,
+    rule: ScheduleRule(
+      type: ScheduleType.intervalHours,
+      times: [DoseTime(8, 0)],
+      intervalHours: 8,
+      durationDays: 7,
+    ),
+  ),
 ];
 
 /// Tela completa de cadastro de medicamento e tratamento (§19, §20).
@@ -229,6 +321,22 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
 
   void _onNameChanged() {
     setState(() {});
+  }
+
+  List<_PresetMedication> get _matchingPresets {
+    final query = _nameController.text.trim().toLowerCase();
+    if (query.isEmpty) return const [];
+    if (_identifiedPreset != null &&
+        _nameController.text.trim().toLowerCase() ==
+            _identifiedPreset!.name.toLowerCase()) {
+      return const [];
+    }
+    return _kPresets.where((p) {
+      final nameMatches = p.name.toLowerCase().contains(query);
+      final activeMatches = p.activeIngredient != null &&
+          p.activeIngredient!.toLowerCase().contains(query);
+      return nameMatches || activeMatches;
+    }).toList();
   }
 
   void _onCycleSettingsChanged() {
@@ -577,13 +685,105 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                 children: [
                   TextFormField(
                     controller: _nameController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Nome do medicamento *',
-                      hintText: 'Ex: Losartana, Ciclo 21, Omeprazol',
+                      hintText: 'Ex: Ciclo 21, Selene, Yaz, Dipirona',
+                      suffixIcon: _nameController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear_rounded, size: 20),
+                              onPressed: () {
+                                _nameController.clear();
+                                setState(() {
+                                  _identifiedPreset = null;
+                                });
+                              },
+                            )
+                          : null,
                     ),
                     validator: (v) =>
                         v == null || v.trim().isEmpty ? 'Informe o nome' : null,
                   ),
+                  if (_matchingPresets.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                            color: AppColors.violet.withValues(alpha: 0.3)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.violet.withValues(alpha: 0.08),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.auto_awesome_rounded,
+                                    size: 16, color: AppColors.violet),
+                                const SizedBox(width: 6),
+                                const Text(
+                                  'Sugestões encontradas (toque para autopreencher):',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.violet,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Divider(height: 1),
+                          for (final preset in _matchingPresets.take(5))
+                            ListTile(
+                              dense: true,
+                              leading: CircleAvatar(
+                                radius: 16,
+                                backgroundColor:
+                                    CategoryStyle.of(preset.category).soft,
+                                child: Icon(
+                                  CategoryStyle.of(preset.category).icon,
+                                  size: 16,
+                                  color:
+                                      CategoryStyle.of(preset.category).color,
+                                ),
+                              ),
+                              title: Text(
+                                preset.name,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
+                              subtitle: Text(
+                                preset.activeIngredient != null &&
+                                        preset.activeIngredient!.isNotEmpty
+                                    ? '${preset.activeIngredient} · ${preset.rule.summary}'
+                                    : preset.rule.summary,
+                                style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              trailing: const Icon(
+                                  Icons.arrow_forward_ios_rounded,
+                                  size: 14,
+                                  color: AppColors.violet),
+                              onTap: () {
+                                FocusScope.of(context).unfocus();
+                                _applyPreset(preset);
+                              },
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   Row(
                     children: [

@@ -41,7 +41,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
         SnackBar(
           content: Text(
             _selectedRole == UserRole.woman
-                ? 'Bem-vinda ao Velix-Med! Seu espaço de saúde está pronto.'
+                ? 'Bem-vinda ao Velix Ciclo! Seu espaço de saúde está pronto.'
                 : 'Perfil de parceiro configurado com sucesso!',
           ),
           backgroundColor: AppColors.violet,
@@ -91,7 +91,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
               ),
               const SizedBox(height: 20),
               Text(
-                'Bem-vindo(a) ao Velix-Med!',
+                'Bem-vindo(a) ao Velix Ciclo!',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       color: AppColors.textPrimary,

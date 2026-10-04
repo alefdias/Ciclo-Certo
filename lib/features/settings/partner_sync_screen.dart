@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../app/theme/app_colors.dart';
+import '../../core/providers.dart';
 import '../../core/widgets/app_widgets.dart';
+import '../../services/cloud_sync_service.dart';
 import '../../services/user_profile_service.dart';
 import 'qr_scanner_screen.dart';
 
-class PartnerSyncScreen extends StatefulWidget {
+class PartnerSyncScreen extends ConsumerStatefulWidget {
   const PartnerSyncScreen({super.key});
 
   @override
-  State<PartnerSyncScreen> createState() => _PartnerSyncScreenState();
+  ConsumerState<PartnerSyncScreen> createState() => _PartnerSyncScreenState();
 }
 
-class _PartnerSyncScreenState extends State<PartnerSyncScreen> {
+class _PartnerSyncScreenState extends ConsumerState<PartnerSyncScreen> {
   final String womanPairingCode = "VLM-8X2B-9Q1";
   final TextEditingController _partnerInputController = TextEditingController();
 
@@ -47,6 +50,13 @@ class _PartnerSyncScreenState extends State<PartnerSyncScreen> {
         }
         _loading = false;
       });
+
+      final db = ref.read(databaseProvider);
+      if (_role == UserRole.woman) {
+        CloudSyncService.instance.syncWomanToCloud(db);
+      } else {
+        CloudSyncService.instance.startPartnerListener(db);
+      }
     }
   }
 
@@ -65,12 +75,15 @@ class _PartnerSyncScreenState extends State<PartnerSyncScreen> {
     if (code.isEmpty) return;
 
     await UserProfileService.instance.setPairedPartnerCode(code);
+    final db = ref.read(databaseProvider);
+    CloudSyncService.instance.startPartnerListener(db);
+
     if (!mounted) return;
     setState(() => _pairedCode = code);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Conectado à parceira com o código $code!'),
+        content: Text('Conectado em tempo real à parceira ($code)!'),
         backgroundColor: AppColors.teal,
       ),
     );
@@ -191,7 +204,7 @@ class _PartnerSyncScreenState extends State<PartnerSyncScreen> {
         ),
         const SizedBox(height: 8),
         const Text(
-          'Peça para o seu parceiro(a) abrir o Velix-Med e escanear o QR Code abaixo para acompanhar suas fases do ciclo e apoiar sua rotina.',
+          'Peça para o seu parceiro(a) abrir o Velix Ciclo e escanear o QR Code abaixo para acompanhar suas fases do ciclo e apoiar sua rotina.',
           textAlign: TextAlign.center,
           style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
         ),

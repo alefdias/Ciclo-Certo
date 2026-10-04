@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
 
-/// Tema claro do Velix Med. (Tema escuro: próxima fase, §44 do documento.)
+/// Tema claro do Velix Ciclo. (Tema escuro: próxima fase, §44 do documento.)
 abstract final class AppTheme {
   static const fontFamily = 'Inter';
 

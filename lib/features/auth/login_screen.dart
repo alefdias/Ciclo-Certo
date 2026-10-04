@@ -73,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final authenticated = await BiometricService.instance.authenticate(
-        reason: 'Confirme sua digital para acessar o Velix-Med',
+        reason: 'Confirme sua digital para acessar o Velix Ciclo',
       );
 
       if (!mounted) return;
@@ -241,7 +241,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         const SizedBox(height: 16),
         Text(
-          'Velix Med',
+          'Velix Ciclo',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 color: AppColors.violet,
@@ -391,7 +391,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         const SizedBox(height: 24),
         Text(
-          'Velix Med',
+          'Velix Ciclo',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.displaySmall?.copyWith(
                 color: AppColors.violet,

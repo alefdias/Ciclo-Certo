@@ -14,6 +14,7 @@ import '../features/stock/stock_screen.dart';
 import '../features/diary/diary_screen.dart';
 import '../features/auth/login_screen.dart';
 import '../features/auth/role_selection_screen.dart';
+import '../services/user_profile_service.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey =
     GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -77,6 +78,13 @@ final appRouter = GoRouter(
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/add-medication',
+      redirect: (context, state) async {
+        final role = await UserProfileService.instance.getUserRole();
+        if (role == UserRole.partner) {
+          return '/medications';
+        }
+        return null;
+      },
       builder: (context, state) => const AddMedicationScreen(),
     ),
     GoRoute(

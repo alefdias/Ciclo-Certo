@@ -92,12 +92,13 @@ class _HomeContent extends ConsumerWidget {
 
 // ---------------------------------------------------------------------------
 
-class _Header extends StatelessWidget {
+class _Header extends ConsumerWidget {
   const _Header();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final now = DateTime.now();
+    final isPartner = ref.watch(isPartnerModeProvider);
     final greeting =
         now.hour < 12
             ? 'Bom dia'
@@ -112,7 +113,37 @@ class _Header extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const VelixLogo(size: 18),
+              Row(
+                children: [
+                  const VelixLogo(size: 18),
+                  if (isPartner) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.violet.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.violet.withValues(alpha: 0.3)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.visibility_rounded, size: 12, color: AppColors.violet),
+                          SizedBox(width: 4),
+                          Text(
+                            'Parceiro (Visualização)',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.violet,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
               const SizedBox(height: 14),
               Text(
                 '$greeting 👋',
@@ -281,54 +312,80 @@ class _NextDoseCard extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 18),
-              Row(
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: FilledButton.icon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: AppColors.violet,
-                        minimumSize: const Size.fromHeight(52),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        textStyle: const TextStyle(
-                          fontFamily: 'Inter',
-                          fontWeight: FontWeight.w800,
-                          fontSize: 16,
-                        ),
-                      ),
-                      onPressed: () => takeDose(context, ref, item),
-                      icon: const Icon(Icons.check_rounded),
-                      label: const Text('TOMEI'),
-                    ),
+              if (ref.watch(isPartnerModeProvider))
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white38),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    flex: 2,
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: const BorderSide(
-                          color: Colors.white54,
-                          width: 1.5,
-                        ),
-                        minimumSize: const Size.fromHeight(52),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        textStyle: const TextStyle(
-                          fontFamily: 'Inter',
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.visibility_rounded, color: Colors.white, size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Modo Parceiro · Apenas Visualização',
+                        style: TextStyle(
+                          color: Colors.white,
                           fontWeight: FontWeight.w700,
+                          fontSize: 14,
                         ),
                       ),
-                      onPressed: () => showDoseActions(context, ref, item),
-                      child: const Text('Adiar'),
-                    ),
+                    ],
                   ),
-                ],
-              ),
+                )
+              else
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: AppColors.violet,
+                          minimumSize: const Size.fromHeight(52),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          textStyle: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                          ),
+                        ),
+                        onPressed: () => takeDose(context, ref, item),
+                        icon: const Icon(Icons.check_rounded),
+                        label: const Text('TOMEI'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      flex: 2,
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          side: const BorderSide(
+                            color: Colors.white54,
+                            width: 1.5,
+                          ),
+                          minimumSize: const Size.fromHeight(52),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          textStyle: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        onPressed: () => showDoseActions(context, ref, item),
+                        child: const Text('Adiar'),
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
         ],
@@ -438,11 +495,21 @@ class _DoseTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final time = DateFormat.Hm().format(item.occurrence.scheduledAt);
+    final isPartner = ref.watch(isPartnerModeProvider);
     final taken = item.status == DoseStatus.taken;
 
     return AppCard(
       padding: const EdgeInsets.all(14),
-      onTap: () => showDoseActions(context, ref, item),
+      onTap: isPartner
+          ? () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Modo Parceiro: apenas visualização.'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            }
+          : () => showDoseActions(context, ref, item),
       child: Row(
         children: [
           SizedBox(
