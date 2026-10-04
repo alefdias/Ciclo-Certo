@@ -1,44 +1,26 @@
 {
   "project_info": {
-    "project_number": "914827383527",
-    "project_id": "velixmed",
-    "storage_bucket": "velixmed.firebasestorage.app"
+    "project_number": "357182464899",
+    "project_id": "ciclo-certo-5d476",
+    "storage_bucket": "ciclo-certo-5d476.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:914827383527:android:135a17c55266e138700842",
+        "mobilesdk_app_id": "1:357182464899:android:209873677ae4b36272ccb6",
         "android_client_info": {
-          "package_name": "com.velixmed.velix_med"
+          "package_name": "com.ciclocerto.app"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "914827383527-mtkdocncsged33d9roa0cflu71pensc5.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.velixmed.velix_med",
-            "certificate_hash": "179645cc5bd4c6fbd17e23b05877dc828eba5a95"
-          }
-        },
-        {
-          "client_id": "914827383527-8ah6upg7vrikmet2fm3u9lt2m4fddbj8.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAZ-Ds-pePmdXCW30ZzjL8n9F_tmbro8FM"
+          "current_key": "AIzaSyAi7C0lho_6JU-_a6rBEnnBta1VmNI8USE"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "914827383527-8ah6upg7vrikmet2fm3u9lt2m4fddbj8.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }

@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "com.velixmed.velix_med"
+    namespace = "com.ciclocerto.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
 
