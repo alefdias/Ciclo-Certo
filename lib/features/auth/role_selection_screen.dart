@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/theme/app_colors.dart';
 import '../../services/user_profile_service.dart';
+import '../settings/qr_scanner_screen.dart';
 
 class RoleSelectionScreen extends StatefulWidget {
   const RoleSelectionScreen({super.key});
@@ -175,11 +176,35 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                         ),
                       ),
                       const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF6366F1),
+                          side: const BorderSide(color: Color(0xFF6366F1)),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () async {
+                          final code = await openQrScanner(context);
+                          if (code != null && code.isNotEmpty) {
+                            setState(() {
+                              _partnerCodeController.text = code.toUpperCase();
+                            });
+                          }
+                        },
+                        icon: const Icon(Icons.qr_code_scanner_rounded, size: 20),
+                        label: const Text(
+                          'Escanear QR Code da Parceira',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
                       TextField(
                         controller: _partnerCodeController,
                         textCapitalization: TextCapitalization.characters,
                         decoration: InputDecoration(
-                          hintText: 'VLM-XXXX-XXX',
+                          hintText: 'Ou digite: VLM-XXXX-XXX',
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
@@ -199,7 +224,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                               width: 2,
                             ),
                           ),
-                          prefixIcon: const Icon(Icons.qr_code_rounded),
+                          prefixIcon: const Icon(Icons.keyboard_rounded),
                         ),
                       ),
                     ],

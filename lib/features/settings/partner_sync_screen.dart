@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../app/theme/app_colors.dart';
 import '../../core/widgets/app_widgets.dart';
 import '../../services/user_profile_service.dart';
+import 'qr_scanner_screen.dart';
 
 class PartnerSyncScreen extends StatefulWidget {
   const PartnerSyncScreen({super.key});
@@ -72,6 +74,14 @@ class _PartnerSyncScreenState extends State<PartnerSyncScreen> {
         backgroundColor: AppColors.teal,
       ),
     );
+  }
+
+  Future<void> _scanPartnerQr() async {
+    final scannedCode = await openQrScanner(context);
+    if (scannedCode != null && scannedCode.isNotEmpty) {
+      _partnerInputController.text = scannedCode.toUpperCase();
+      await _savePartnerCode();
+    }
   }
 
   Future<void> _switchRole(UserRole newRole) async {
@@ -179,30 +189,63 @@ class _PartnerSyncScreenState extends State<PartnerSyncScreen> {
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         const Text(
-          'Peça para o seu parceiro(a) baixar o Velix-Med e inserir este código. Ele(a) receberá notificações sobre suas fases do ciclo, TPM e janela fértil.',
+          'Peça para o seu parceiro(a) abrir o Velix-Med e escanear o QR Code abaixo para acompanhar suas fases do ciclo e apoiar sua rotina.',
           textAlign: TextAlign.center,
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 15),
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 28),
+
+        // Card com QR Code da Mulher
         AppCard(
           padding: const EdgeInsets.all(24),
           child: Column(
             children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: AppColors.violet.withValues(alpha: 0.2),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.violet.withValues(alpha: 0.08),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: QrImageView(
+                  data: womanPairingCode,
+                  version: QrVersions.auto,
+                  size: 200.0,
+                  eyeStyle: const QrEyeStyle(
+                    eyeShape: QrEyeShape.square,
+                    color: AppColors.violet,
+                  ),
+                  dataModuleStyle: const QrDataModuleStyle(
+                    dataModuleShape: QrDataModuleShape.circle,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
               const Text(
-                'SEU CÓDIGO DE PAREAMENTO',
+                'OU COMPARTILHE O CÓDIGO',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textMuted,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  vertical: 16,
-                  horizontal: 24,
+                  vertical: 12,
+                  horizontal: 20,
                 ),
                 decoration: BoxDecoration(
                   color: AppColors.violet.withValues(alpha: 0.1),
@@ -214,22 +257,27 @@ class _PartnerSyncScreenState extends State<PartnerSyncScreen> {
                 child: Text(
                   womanPairingCode,
                   style: const TextStyle(
-                    fontSize: 28,
+                    fontSize: 24,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: 3,
+                    letterSpacing: 2,
                     color: AppColors.violet,
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
-                child: FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.violet,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.violet,
+                    side: const BorderSide(color: AppColors.violet),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   onPressed: _copyCode,
-                  icon: const Icon(Icons.copy_rounded),
+                  icon: const Icon(Icons.copy_rounded, size: 18),
                   label: const Text('Copiar Código'),
                 ),
               )
@@ -270,13 +318,37 @@ class _PartnerSyncScreenState extends State<PartnerSyncScreen> {
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         const Text(
-          'Insira o código de pareamento gerado no celular da sua parceira para receber lembretes de ciclo, TPM e fases com empatia.',
+          'Escaneie o QR Code exibido no celular da sua parceira para sincronizar instantaneamente.',
           textAlign: TextAlign.center,
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 15),
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 28),
+
+        // Botão Principal: Escanear QR Code
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.violet,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              elevation: 4,
+            ),
+            onPressed: _scanPartnerQr,
+            icon: const Icon(Icons.qr_code_scanner_rounded, size: 26),
+            label: const Text(
+              'Escanear QR Code da Parceira',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
         AppCard(
           padding: const EdgeInsets.all(24),
           child: Column(
@@ -310,7 +382,7 @@ class _PartnerSyncScreenState extends State<PartnerSyncScreen> {
                 const SizedBox(height: 16),
               ],
               const Text(
-                'CÓDIGO DA PARCEIRA',
+                'OU DIGITE O CÓDIGO MANUALMENTE',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
@@ -333,19 +405,20 @@ class _PartnerSyncScreenState extends State<PartnerSyncScreen> {
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: AppColors.border),
                   ),
-                  prefixIcon: const Icon(Icons.qr_code_rounded),
+                  prefixIcon: const Icon(Icons.keyboard_rounded),
                 ),
               ),
-              const SizedBox(height: 20),
-              FilledButton.icon(
+              const SizedBox(height: 16),
+              FilledButton.tonal(
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF6366F1),
                   padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 onPressed: _savePartnerCode,
-                icon: const Icon(Icons.sync_rounded),
-                label: Text(
-                  isConnected ? 'Atualizar Conexão' : 'Conectar à Parceira',
+                child: Text(
+                  isConnected ? 'Atualizar Código' : 'Vincular por Código',
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
