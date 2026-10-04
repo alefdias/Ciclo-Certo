@@ -1,0 +1,59 @@
+name: Code Scanning & Analysis
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  schedule:
+    - cron: '30 2 * * 0' # Roda semanalmente
+  workflow_dispatch:
+
+jobs:
+  dart-analysis:
+    name: Dart / Flutter Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Run Dart Analyzer
+        run: flutter analyze
+
+  # CodeQL focado na parte nativa do App (Android - Java/Kotlin)
+  codeql-native:
+    name: CodeQL Security Scan (Native Android)
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: java # Analisa o código nativo Android
+
+      - name: Build native code
+        run: |
+          cd android
+          ./gradlew assembleDebug
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
