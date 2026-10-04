@@ -226,17 +226,10 @@ class _LoginScreenState extends State<LoginScreen> {
         const Spacer(),
         // Logo & Título
         Center(
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.violet.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.medical_services_rounded,
-              size: 56,
-              color: AppColors.violet,
-            ),
+          child: Image.asset(
+            'assets/icon/app_logo.png',
+            width: 88,
+            height: 88,
           ),
         ),
         const SizedBox(height: 16),
@@ -384,10 +377,12 @@ class _LoginScreenState extends State<LoginScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const Spacer(),
-        const Icon(
-          Icons.medical_services_rounded,
-          size: 80,
-          color: AppColors.violet,
+        Center(
+          child: Image.asset(
+            'assets/icon/app_logo.png',
+            width: 104,
+            height: 104,
+          ),
         ),
         const SizedBox(height: 24),
         Text(

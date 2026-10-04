@@ -194,13 +194,13 @@ class VelixLogo extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        ShaderMask(
-          shaderCallback: (r) => AppColors.brandGradient.createShader(r),
-          child: Text('C',
-              style: TextStyle(
-                  fontSize: size * 1.3, fontWeight: FontWeight.w900, color: Colors.white, height: 1)),
+        Image.asset(
+          'assets/icon/app_logo.png',
+          width: size * 1.35,
+          height: size * 1.35,
+          fit: BoxFit.contain,
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: 8),
         Text('Ciclo ',
             style: TextStyle(
                 fontSize: size, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
