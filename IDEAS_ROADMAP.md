@@ -40,3 +40,10 @@ Documento de referência para melhorias e novas funcionalidades do aplicativo **
   - Opção de escanear a cartela real para adaptar o layout gráfico.
 - [ ] **Lembrete Antecipado de Comprar Nova Cartela:**
   - Notificação quando restarem poucas pílulas ativas antes da pausa.
+
+---
+
+## 💰 Monetização & Google Play Store
+Para detalhes completos de monetização, modelos de assinatura (Freemium), anúncios recompensados e parcerias, consulte o documento dedicado:
+- 👉 [MONETIZATION_STRATEGY.md](file:///home/alef/Documentos/Velix-Med/frontend/MONETIZATION_STRATEGY.md)
+
