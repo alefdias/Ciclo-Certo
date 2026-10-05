@@ -101,29 +101,57 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       horizontal: 16,
                       vertical: 8,
                     ),
-                    child: ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Icon(
-                        isPartner ? Icons.link_rounded : Icons.favorite_rounded,
-                        color: isPartner ? AppColors.violet : AppColors.danger,
-                      ),
-                      title: Text(
-                        isPartner
-                            ? 'Status da Parceria'
-                            : 'Sincronização com Parceiro(a)',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      subtitle: Text(
-                        isPartner
-                            ? 'Ver código conectado e gerenciar conexão'
-                            : 'Compartilhe seu ciclo por código ou QR Code',
-                        style: const TextStyle(fontSize: 13),
-                      ),
-                      trailing: const Icon(
-                        Icons.chevron_right_rounded,
-                        color: AppColors.textMuted,
-                      ),
-                      onTap: () => context.push('/partner-sync'),
+                    child: Column(
+                      children: [
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(
+                            Icons.chat_bubble_rounded,
+                            color: Color(0xFF16A34A),
+                          ),
+                          title: const Text(
+                            'ZapCiclo (Chat do Casal)',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          subtitle: const Text(
+                            'Converse em tempo real com seu amor',
+                            style: TextStyle(fontSize: 13),
+                          ),
+                          trailing: const Icon(
+                            Icons.chevron_right_rounded,
+                            color: AppColors.textMuted,
+                          ),
+                          onTap: () => context.push('/zapciclo'),
+                        ),
+                        const Divider(),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            isPartner
+                                ? Icons.link_rounded
+                                : Icons.favorite_rounded,
+                            color:
+                                isPartner ? AppColors.violet : AppColors.danger,
+                          ),
+                          title: Text(
+                            isPartner
+                                ? 'Status da Parceria'
+                                : 'Sincronização com Parceiro(a)',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          subtitle: Text(
+                            isPartner
+                                ? 'Ver código conectado e gerenciar conexão'
+                                : 'Compartilhe seu ciclo por código ou QR Code',
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                          trailing: const Icon(
+                            Icons.chevron_right_rounded,
+                            color: AppColors.textMuted,
+                          ),
+                          onTap: () => context.push('/partner-sync'),
+                        ),
+                      ],
                     ),
                   ),
                 ],

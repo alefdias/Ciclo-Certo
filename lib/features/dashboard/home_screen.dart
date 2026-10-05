@@ -177,6 +177,13 @@ class _Header extends ConsumerWidget {
             ],
           ),
         ),
+        _RoundIcon(
+          icon: Icons.chat_bubble_rounded,
+          color: const Color(0xFF16A34A),
+          tooltip: 'ZapCiclo',
+          onTap: () => context.push('/zapciclo'),
+        ),
+        const SizedBox(width: 8),
         _RoundIcon(icon: Icons.notifications_none_rounded, onTap: () {}),
       ],
     );
@@ -184,13 +191,20 @@ class _Header extends ConsumerWidget {
 }
 
 class _RoundIcon extends StatelessWidget {
-  const _RoundIcon({required this.icon, required this.onTap});
+  const _RoundIcon({
+    required this.icon,
+    required this.onTap,
+    this.color,
+    this.tooltip,
+  });
   final IconData icon;
   final VoidCallback onTap;
+  final Color? color;
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
+    final btn = Material(
       color: AppColors.surfaceSoft,
       shape: const CircleBorder(),
       child: InkWell(
@@ -198,10 +212,15 @@ class _RoundIcon extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(12),
-          child: Icon(icon, color: AppColors.textPrimary),
+          child: Icon(icon, color: color ?? AppColors.textPrimary),
         ),
       ),
     );
+
+    if (tooltip != null) {
+      return Tooltip(message: tooltip!, child: btn);
+    }
+    return btn;
   }
 }
 
@@ -939,6 +958,12 @@ class _PartnerCaringActionsCard extends StatelessWidget {
                   label: 'Mensagem',
                   onTap: () => _customMessageDialog(context),
                 ),
+                const SizedBox(width: 8),
+                _CarinhoButton(
+                  emoji: '💬',
+                  label: 'ZapCiclo',
+                  onTap: () => context.push('/zapciclo'),
+                ),
               ],
             ),
           ),
@@ -1058,6 +1083,16 @@ class _WomanPartnerLoveBanner extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(width: 6),
+              IconButton(
+                tooltip: 'Responder no ZapCiclo',
+                icon: const Icon(
+                  Icons.chat_bubble_rounded,
+                  color: Color(0xFFBE123C),
+                  size: 20,
+                ),
+                onPressed: () => context.push('/zapciclo'),
               ),
             ],
           ),

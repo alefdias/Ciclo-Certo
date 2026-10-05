@@ -16,6 +16,7 @@ import '../features/stock/stock_screen.dart';
 import '../features/diary/diary_screen.dart';
 import '../features/auth/login_screen.dart';
 import '../features/auth/role_selection_screen.dart';
+import '../features/chat/zap_ciclo_screen.dart';
 import '../services/user_profile_service.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(
@@ -103,6 +104,11 @@ final appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/privacy-lock',
       builder: (context, state) => const PrivacyLockScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/zapciclo',
+      builder: (context, state) => const ZapCicloScreen(),
     ),
   ],
 );

@@ -8,6 +8,7 @@ import '../services/dose_service.dart';
 import '../services/notification_service.dart';
 import '../services/schedule_engine/schedule_engine.dart';
 import '../services/user_profile_service.dart';
+import '../services/zapciclo_service.dart';
 import 'database/app_database.dart';
 
 // ---------------------------------------------------------------------------
@@ -18,10 +19,12 @@ final databaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
   ref.onDispose(() {
     CloudSyncService.instance.stopListener();
+    ZapCicloService.instance.stop();
     db.close();
   });
   CloudSyncService.instance.startPartnerListener(db);
   CloudSyncService.instance.syncWomanToCloud(db);
+  ZapCicloService.instance.startBackgroundNotificationListener();
   return db;
 });
 
