@@ -79,6 +79,14 @@ final recordsForDayProvider = StreamProvider.family<List<DoseRecord>, DateTime>(
   },
 );
 
+/// Registros do mês inteiro para colorir o calendário reativamente (tomada/esquecida).
+final recordsForMonthProvider =
+    StreamProvider.family<List<DoseRecord>, DateTime>((ref, month) {
+      final start = DateTime(month.year, month.month, 1);
+      final end = DateTime(month.year, month.month + 1, 1);
+      return ref.watch(doseRecordRepositoryProvider).watchBetween(start, end);
+    });
+
 // ---------------------------------------------------------------------------
 // View models
 // ---------------------------------------------------------------------------
@@ -122,9 +130,12 @@ final dosesForDayProvider =
       final records = ref.watch(recordsForDayProvider(dateOnly(day)));
       final engine = ref.watch(scheduleEngineProvider);
 
-      if (meds.hasError) return AsyncError(meds.error!, meds.stackTrace!);
-      if (treatments.hasError)
+      if (meds.hasError) {
+        return AsyncError(meds.error!, meds.stackTrace!);
+      }
+      if (treatments.hasError) {
         return AsyncError(treatments.error!, treatments.stackTrace!);
+      }
       if (!meds.hasValue || !treatments.hasValue || !records.hasValue) {
         return const AsyncLoading();
       }

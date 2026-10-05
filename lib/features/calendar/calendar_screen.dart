@@ -10,7 +10,7 @@ import '../../models/enums.dart';
 import '../../models/models.dart';
 import '../../services/schedule_engine/schedule_engine.dart';
 
-/// Calendário mensal com fases de ciclo e doses do dia (§15).
+/// Calendário mensal com fases de ciclo, status de pílula tomada/esquecida e doses do dia (§15).
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
 
@@ -21,6 +21,7 @@ class CalendarScreen extends ConsumerStatefulWidget {
 class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   late DateTime _month = DateTime(DateTime.now().year, DateTime.now().month);
   late DateTime _selected = dateOnly(DateTime.now());
+  bool _showOccurrences = true;
 
   void _shiftMonth(int delta) =>
       setState(() => _month = DateTime(_month.year, _month.month + delta));
@@ -58,62 +59,101 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   onSelect: (d) => setState(() => _selected = d),
                 ),
                 if (cyclic != null) ...[
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 16),
                   const Divider(),
                   const SizedBox(height: 12),
-                  const Wrap(
-                    spacing: 16,
-                    runSpacing: 8,
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _Legend(
-                        color: AppColors.dangerSoft,
-                        border: AppColors.danger,
-                        label: 'Dia de uso',
+                        color: Color(0xFF5B8E7D),
+                        border: Colors.transparent,
+                        label: 'Pílula tomada',
                       ),
                       _Legend(
-                        color: AppColors.pauseSoft,
-                        border: AppColors.pause,
-                        label: 'Pausa',
-                      ),
-                      _Legend(
-                        color: Color(0xFFEDE9FE),
-                        border: AppColors.violet,
-                        label: 'Nova cartela',
+                        color: Color(0xFFCFD8DC),
+                        border: Colors.transparent,
+                        label: 'Pílula inativa',
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _Legend(
+                        color: Color(0xFFE04848),
+                        border: Colors.transparent,
+                        label: 'Pílula esquecida',
+                      ),
+                      _Legend(
+                        color: Color(0xFFF9D2C8),
+                        border: Colors.transparent,
+                        label: 'Pílula ativa',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Center(
+                    child: _Legend(
+                      color: Colors.transparent,
+                      border: Color(0xFF1E293B),
+                      borderWidth: 2,
+                      label: 'Dia atual',
+                    ),
                   ),
                 ],
               ],
             ),
           ),
-          const SizedBox(height: 24),
-          SectionTitle(_selectedTitle()),
-          dayDoses.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Text('$e'),
-            data:
-                (items) =>
-                    items.isEmpty
-                        ? const EmptyState(
-                          icon: Icons.event_busy_rounded,
-                          title: 'Nenhuma dose neste dia',
-                        )
-                        : Column(
-                          children: [
-                            for (final item in items) ...[
-                              _DayDoseTile(
-                                item: item,
-                                canAct:
-                                    !isPartner &&
-                                    !_selected.isAfter(
-                                      dateOnly(DateTime.now()),
-                                    ),
-                              ),
-                              const SizedBox(height: 10),
-                            ],
-                          ],
-                        ),
+          const SizedBox(height: 16),
+
+          // Alternador de Visualizar Ocorrências
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Visualizar ocorrências',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+              ),
+              Switch(
+                value: _showOccurrences,
+                onChanged: (v) => setState(() => _showOccurrences = v),
+                activeColor: AppColors.violet,
+              ),
+            ],
           ),
+
+          if (_showOccurrences) ...[
+            const SizedBox(height: 12),
+            SectionTitle(_selectedTitle()),
+            dayDoses.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Text('$e'),
+              data:
+                  (items) =>
+                      items.isEmpty
+                          ? const EmptyState(
+                            icon: Icons.event_busy_rounded,
+                            title: 'Nenhuma dose neste dia',
+                          )
+                          : Column(
+                            children: [
+                              for (final item in items) ...[
+                                _DayDoseTile(
+                                  item: item,
+                                  canAct:
+                                      !isPartner &&
+                                      !_selected.isAfter(
+                                        dateOnly(DateTime.now()),
+                                      ),
+                                ),
+                                const SizedBox(height: 10),
+                              ],
+                            ],
+                          ),
+            ),
+          ],
         ],
       ),
     );
@@ -175,6 +215,9 @@ class _MonthGrid extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final engine = ref.watch(scheduleEngineProvider);
+    final monthRecords =
+        ref.watch(recordsForMonthProvider(month)).valueOrNull ??
+        const <DoseRecord>[];
     final today = dateOnly(DateTime.now());
     final first = DateTime(month.year, month.month);
     final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
@@ -212,64 +255,108 @@ class _MonthGrid extends ConsumerWidget {
           itemBuilder: (_, i) {
             if (i < leading) return const SizedBox.shrink();
             final day = DateTime(month.year, month.month, i - leading + 1);
+            final dayNormalized = dateOnly(day);
             final hasDoses = engine.forDay(treatments, day).isNotEmpty;
 
             Color bg = Colors.transparent;
             Color fg = AppColors.textPrimary;
-            if (cyclic != null && !day.isBefore(dateOnly(cyclic!.startDate))) {
-              final info = CycleInfo.of(cyclic!, day);
+            Border? ringBorder;
+
+            if (cyclic != null &&
+                !dayNormalized.isBefore(dateOnly(cyclic!.startDate))) {
+              final info = CycleInfo.of(cyclic!, dayNormalized);
               if (!info.finished) {
-                if (info.dayOfCycle == 1) {
-                  bg = const Color(0xFFEDE9FE);
-                  fg = AppColors.violet;
-                } else if (info.isUsageDay) {
-                  bg = AppColors.dangerSoft;
-                  fg = AppColors.danger;
+                final dayRecords = monthRecords.where(
+                  (r) =>
+                      r.scheduledAt.year == day.year &&
+                      r.scheduledAt.month == day.month &&
+                      r.scheduledAt.day == day.day,
+                );
+                final isTaken = dayRecords.any(
+                  (r) => r.status == DoseStatus.taken,
+                );
+                final isSkippedOrMissed = dayRecords.any(
+                  (r) =>
+                      r.status == DoseStatus.skipped ||
+                      r.status == DoseStatus.missed,
+                );
+
+                if (info.isUsageDay) {
+                  if (isTaken) {
+                    // Pílula tomada -> Verde
+                    bg = const Color(0xFF5B8E7D);
+                    fg = Colors.white;
+                  } else if (dayNormalized.isBefore(today) ||
+                      isSkippedOrMissed) {
+                    // Pílula esquecida -> Vermelho
+                    bg = const Color(0xFFE04848);
+                    fg = Colors.white;
+                  } else {
+                    // Pílula ativa pendente (hoje ou futuro) -> Rosa/Pêssego
+                    bg = const Color(0xFFF9D2C8);
+                    fg = const Color(0xFF991B1B);
+                  }
                 } else {
-                  bg = AppColors.pauseSoft;
-                  fg = const Color(0xFF0369A1);
+                  // Pílula inativa (pausa ou placebo) -> Cinza
+                  bg = const Color(0xFFCFD8DC);
+                  fg = const Color(0xFF475569);
                 }
               }
+            } else if (hasDoses) {
+              final dayRecords = monthRecords.where(
+                (r) =>
+                    r.scheduledAt.year == day.year &&
+                    r.scheduledAt.month == day.month &&
+                    r.scheduledAt.day == day.day,
+              );
+              final isTaken = dayRecords.any(
+                (r) => r.status == DoseStatus.taken,
+              );
+              if (isTaken) {
+                bg = const Color(0xFF5B8E7D);
+                fg = Colors.white;
+              } else if (dayNormalized.isBefore(today)) {
+                bg = const Color(0xFFE04848);
+                fg = Colors.white;
+              } else {
+                bg = AppColors.violet.withValues(alpha: 0.15);
+                fg = AppColors.violet;
+              }
             }
-            final isSelected = day == selected;
-            final isToday = day == today;
+
+            final isSelected = dayNormalized == selected;
+            final isToday = dayNormalized == today;
+
+            if (isToday) {
+              ringBorder = Border.all(
+                color: const Color(0xFF1E293B),
+                width: 2.2,
+              );
+            }
 
             return GestureDetector(
-              onTap: () => onSelect(day),
+              onTap: () => onSelect(dayNormalized),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(
-                  color: isSelected ? null : bg,
-                  gradient: isSelected ? AppColors.brandGradient : null,
+                  color: bg,
                   shape: BoxShape.circle,
                   border:
-                      isToday && !isSelected
-                          ? Border.all(color: AppColors.violet, width: 2)
-                          : null,
+                      isSelected
+                          ? Border.all(color: AppColors.violet, width: 2.5)
+                          : ringBorder,
                 ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Text(
-                      '${day.day}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: isSelected ? Colors.white : fg,
-                      ),
+                child: Center(
+                  child: Text(
+                    '${day.day}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color:
+                          isSelected && bg == Colors.transparent
+                              ? AppColors.violet
+                              : fg,
                     ),
-                    if (hasDoses && cyclic == null)
-                      Positioned(
-                        bottom: 5,
-                        child: Container(
-                          width: 4,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: isSelected ? Colors.white : AppColors.teal,
-                          ),
-                        ),
-                      ),
-                  ],
+                  ),
                 ),
               ),
             );
@@ -284,10 +371,13 @@ class _Legend extends StatelessWidget {
   const _Legend({
     required this.color,
     required this.border,
+    this.borderWidth = 1.5,
     required this.label,
   });
+
   final Color color;
   final Color border;
+  final double borderWidth;
   final String label;
 
   @override
@@ -301,7 +391,7 @@ class _Legend extends StatelessWidget {
           decoration: BoxDecoration(
             color: color,
             shape: BoxShape.circle,
-            border: Border.all(color: border, width: 1.5),
+            border: Border.all(color: border, width: borderWidth),
           ),
         ),
         const SizedBox(width: 6),
@@ -349,14 +439,19 @@ class _DayDoseTile extends ConsumerWidget {
               ],
             ),
           ),
-          if (canAct)
-            StatusChip(status: item.status, late: item.isLate)
-          else
-            const Icon(
-              Icons.schedule_rounded,
-              color: AppColors.textMuted,
-              size: 20,
+          StatusChip(status: item.status, late: item.isLate),
+          if (canAct && !item.isDone) ...[
+            const SizedBox(width: 8),
+            IconButton.filledTonal(
+              tooltip: 'Tomei',
+              style: IconButton.styleFrom(
+                backgroundColor: AppColors.successSoft,
+                foregroundColor: AppColors.success,
+              ),
+              onPressed: () => takeDose(context, ref, item),
+              icon: const Icon(Icons.check_rounded),
             ),
+          ],
         ],
       ),
     );
