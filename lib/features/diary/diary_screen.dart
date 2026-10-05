@@ -23,6 +23,8 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
 
   String? _selectedMood;
   final Set<String> _selectedSymptoms = {};
+  bool _hadIntimacy = false;
+  bool? _usedProtection;
   List<DiaryEntry> _entries = [];
   bool _loading = true;
 
@@ -70,10 +72,15 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
 
   Future<void> _saveEntry() async {
     final text = _diaryController.text.trim();
-    if (text.isEmpty && _selectedMood == null && _selectedSymptoms.isEmpty) {
+    if (text.isEmpty &&
+        _selectedMood == null &&
+        _selectedSymptoms.isEmpty &&
+        !_hadIntimacy) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Selecione um humor, sintoma ou digite uma anotação.'),
+          content: Text(
+            'Selecione um humor, sintoma, vida íntima ou anotação.',
+          ),
         ),
       );
       return;
@@ -85,6 +92,8 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
       mood: _selectedMood,
       symptoms: _selectedSymptoms.toList(),
       text: text,
+      hadIntimacy: _hadIntimacy,
+      usedProtection: _hadIntimacy ? _usedProtection : null,
     );
 
     await DiaryService.instance.addEntry(entry);
@@ -97,6 +106,8 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
     setState(() {
       _selectedMood = null;
       _selectedSymptoms.clear();
+      _hadIntimacy = false;
+      _usedProtection = null;
     });
 
     await _loadEntries();
@@ -452,6 +463,42 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
                   }).toList(),
             ),
           ],
+          if (entry.hadIntimacy) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF43F5E).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: const Color(0xFFF43F5E).withValues(alpha: 0.2),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.favorite_rounded,
+                    size: 14,
+                    color: Color(0xFFF43F5E),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    entry.usedProtection == true
+                        ? 'Relação íntima (Com proteção 🛡️)'
+                        : entry.usedProtection == false
+                        ? 'Relação íntima (Sem proteção ⚠️)'
+                        : 'Relação íntima registrada',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFE11D48),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           if (entry.text.isNotEmpty) ...[
             const SizedBox(height: 10),
             Text(
@@ -577,6 +624,89 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
                   checkmarkColor: AppColors.teal,
                 );
               }).toList(),
+        ),
+        const SizedBox(height: 20),
+
+        // Vida Íntima (Opcional)
+        AppCard(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.favorite_rounded,
+                    color: Color(0xFFF43F5E),
+                    size: 22,
+                  ),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Vida Íntima (Opcional)',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'Acompanhe relações para histórico de saúde e ciclo',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: _hadIntimacy,
+                    activeColor: const Color(0xFFF43F5E),
+                    onChanged: (val) {
+                      setState(() {
+                        _hadIntimacy = val;
+                        if (!val) _usedProtection = null;
+                      });
+                    },
+                  ),
+                ],
+              ),
+              if (_hadIntimacy) ...[
+                const SizedBox(height: 12),
+                const Divider(),
+                const SizedBox(height: 8),
+                const Text(
+                  'Houve uso de proteção / preservativo?',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    ChoiceChip(
+                      label: const Text('Com proteção 🛡️'),
+                      selected: _usedProtection == true,
+                      onSelected: (val) {
+                        setState(() => _usedProtection = val ? true : null);
+                      },
+                      selectedColor: AppColors.teal.withValues(alpha: 0.2),
+                    ),
+                    ChoiceChip(
+                      label: const Text('Sem proteção ⚠️'),
+                      selected: _usedProtection == false,
+                      onSelected: (val) {
+                        setState(() => _usedProtection = val ? false : null);
+                      },
+                      selectedColor: AppColors.danger.withValues(alpha: 0.2),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
         ),
         const SizedBox(height: 20),
 
@@ -732,6 +862,42 @@ class _DiaryScreenState extends ConsumerState<DiaryScreen> {
                       ),
                     );
                   }).toList(),
+            ),
+          ],
+          if (entry.hadIntimacy) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF43F5E).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: const Color(0xFFF43F5E).withValues(alpha: 0.2),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.favorite_rounded,
+                    size: 14,
+                    color: Color(0xFFF43F5E),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    entry.usedProtection == true
+                        ? 'Relação íntima (Com proteção 🛡️)'
+                        : entry.usedProtection == false
+                        ? 'Relação íntima (Sem proteção ⚠️)'
+                        : 'Relação íntima registrada',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFE11D48),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
           if (entry.text.isNotEmpty) ...[

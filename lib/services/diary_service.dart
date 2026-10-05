@@ -8,6 +8,8 @@ class DiaryEntry {
   final String? mood;
   final List<String> symptoms;
   final String text;
+  final bool hadIntimacy;
+  final bool? usedProtection;
 
   DiaryEntry({
     required this.id,
@@ -15,6 +17,8 @@ class DiaryEntry {
     this.mood,
     this.symptoms = const [],
     required this.text,
+    this.hadIntimacy = false,
+    this.usedProtection,
   });
 
   Map<String, dynamic> toMap() => {
@@ -23,6 +27,8 @@ class DiaryEntry {
     'mood': mood,
     'symptoms': symptoms,
     'text': text,
+    'hadIntimacy': hadIntimacy,
+    'usedProtection': usedProtection,
   };
 
   factory DiaryEntry.fromMap(Map<String, dynamic> map) => DiaryEntry(
@@ -35,6 +41,8 @@ class DiaryEntry {
             .toList() ??
         [],
     text: map['text'] as String? ?? '',
+    hadIntimacy: map['hadIntimacy'] as bool? ?? false,
+    usedProtection: map['usedProtection'] as bool?,
   );
 }
 

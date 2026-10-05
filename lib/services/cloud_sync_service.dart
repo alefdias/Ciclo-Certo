@@ -15,10 +15,21 @@ class CloudSyncService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
   _partnerSubscription;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
+  _womanSubscription;
 
   /// IDs de doses que já estavam como 'tomadas' (para evitar notificar histórico antigo)
   final Set<String> _knownTakenDoseIds = {};
+
+  /// IDs de doses com atraso que já foram notificadas ao parceiro hoje
+  final Set<String> _delayedAlertedDoseIds = {};
   bool _isFirstSync = true;
+  String? _lastReactionTimestamp;
+
+  final _reactionController =
+      StreamController<Map<String, dynamic>?>.broadcast();
+  Stream<Map<String, dynamic>?> get reactionStream =>
+      _reactionController.stream;
 
   /// Código padrão da mulher (caso não haja um dinâmico)
   static const String defaultWomanCode = "VLM-8X2B-9Q1";
@@ -32,6 +43,8 @@ class CloudSyncService {
         // Parceiro não sincroniza seus dados locais para cima, apenas lê
         return;
       }
+
+      startWomanListener();
 
       // Lê todos os dados locais
       final medRows = await db.select(db.medications).get();
@@ -197,6 +210,46 @@ class CloudSyncService {
                 } else {
                   _knownTakenDoseIds.add(doseId);
                 }
+              } else if (status == 'pending') {
+                // Alerta Inteligente de Atraso para o Parceiro (> 1 hora de atraso)
+                final scheduledAt = DateTime.tryParse(
+                  map['scheduledAt'] as String? ?? '',
+                );
+                final now = DateTime.now();
+                if (scheduledAt != null &&
+                    scheduledAt.year == now.year &&
+                    scheduledAt.month == now.month &&
+                    scheduledAt.day == now.day &&
+                    now.difference(scheduledAt).inMinutes >= 60 &&
+                    !_delayedAlertedDoseIds.contains(doseId)) {
+                  _delayedAlertedDoseIds.add(doseId);
+
+                  final treatmentId = map['treatmentId'] as String?;
+                  String medName = 'o remédio';
+                  if (treatmentId != null) {
+                    final treat = treatments.firstWhere(
+                      (t) => (t as Map)['id'] == treatmentId,
+                      orElse: () => null,
+                    );
+                    if (treat != null) {
+                      final medId = (treat as Map)['medicationId'];
+                      final med = meds.firstWhere(
+                        (m) => (m as Map)['id'] == medId,
+                        orElse: () => null,
+                      );
+                      if (med != null) {
+                        medName = (med as Map)['name'] ?? 'o remédio';
+                      }
+                    }
+                  }
+
+                  await NotificationService.instance.showImmediateNotification(
+                    id: doseId.hashCode + 9999,
+                    title: 'Lembrete Carinhoso do Ciclo 🌸',
+                    body:
+                        'A dose de $medName da sua parceira está com mais de 1h de atraso. Vale a pena lembrá-la com carinho!',
+                  );
+                }
               }
             }
             _isFirstSync = false;
@@ -314,10 +367,78 @@ class CloudSyncService {
         });
   }
 
+  /// Inicia a escuta em tempo real no aparelho da mulher (para carinhos e reações do parceiro)
+  void startWomanListener() async {
+    _womanSubscription?.cancel();
+    final role = await UserProfileService.instance.getUserRole();
+    if (role == UserRole.partner) return;
+
+    _womanSubscription = _firestore
+        .collection('couples')
+        .doc(defaultWomanCode)
+        .snapshots()
+        .listen((snapshot) async {
+          if (!snapshot.exists || snapshot.data() == null) return;
+          final data = snapshot.data()!;
+          final reaction = data['latestReaction'];
+          if (reaction is Map) {
+            final map = Map<String, dynamic>.from(reaction);
+            final sentAt = map['sentAt'] as String?;
+            final sender = map['sender'] as String?;
+            if (sender == 'partner' &&
+                sentAt != null &&
+                sentAt != _lastReactionTimestamp) {
+              _lastReactionTimestamp = sentAt;
+              _reactionController.add(map);
+
+              final sentDate = DateTime.tryParse(sentAt);
+              if (sentDate != null &&
+                  DateTime.now().difference(sentDate).inMinutes < 60) {
+                final message =
+                    map['message'] as String? ??
+                    'Seu parceiro enviou um carinho especial! 🌸';
+                await NotificationService.instance.showImmediateNotification(
+                  id: 77777,
+                  title: 'Carinho do seu parceiro 💕',
+                  body: message,
+                );
+              }
+            }
+          }
+        });
+  }
+
+  /// Parceiro envia uma reação ou gesto de cuidado em tempo real para a esposa
+  Future<void> sendPartnerReaction({
+    required String type,
+    required String message,
+  }) async {
+    try {
+      final partnerCode =
+          await UserProfileService.instance.getPairedPartnerCode();
+      final code =
+          (partnerCode != null && partnerCode.trim().isNotEmpty)
+              ? partnerCode.trim().toUpperCase()
+              : defaultWomanCode;
+
+      await _firestore.collection('couples').doc(code).set({
+        'latestReaction': {
+          'type': type,
+          'message': message,
+          'sender': 'partner',
+          'sentAt': DateTime.now().toIso8601String(),
+        },
+      }, SetOptions(merge: true));
+    } catch (_) {}
+  }
+
   void stopListener() {
     _partnerSubscription?.cancel();
     _partnerSubscription = null;
+    _womanSubscription?.cancel();
+    _womanSubscription = null;
     _knownTakenDoseIds.clear();
+    _delayedAlertedDoseIds.clear();
     _isFirstSync = true;
   }
 }

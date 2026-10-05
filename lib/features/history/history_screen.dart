@@ -7,6 +7,7 @@ import '../../core/providers.dart';
 import '../../core/widgets/app_widgets.dart';
 import '../../models/enums.dart';
 import '../../models/models.dart';
+import '../../services/medical_report_service.dart';
 
 /// Tela de Histórico de Doses e Adesão Descritiva (§9 e §10).
 class HistoryScreen extends ConsumerStatefulWidget {
@@ -52,7 +53,18 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         total > 0 ? ((takenCount / total) * 100).round() : 100;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Histórico')),
+      appBar: AppBar(
+        title: const Text('Histórico'),
+        actions: [
+          IconButton(
+            tooltip: 'Exportar Relatório Médico',
+            icon: const Icon(Icons.share_rounded),
+            onPressed:
+                () =>
+                    MedicalReportService.instance.exportAndShare(context, ref),
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
         children: [
@@ -105,6 +117,32 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                   style: const TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.teal,
+                      side: const BorderSide(color: AppColors.teal),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    icon: const Icon(Icons.assignment_outlined, size: 18),
+                    label: const Text(
+                      'Gerar Relatório para Consulta Médica',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                    onPressed:
+                        () => MedicalReportService.instance.exportAndShare(
+                          context,
+                          ref,
+                        ),
                   ),
                 ),
               ],

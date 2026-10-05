@@ -9,6 +9,7 @@ import '../../core/widgets/app_widgets.dart';
 import '../../core/widgets/dose_actions.dart';
 import '../../models/enums.dart';
 import '../../models/models.dart';
+import '../../services/cloud_sync_service.dart';
 import '../../services/schedule_engine/schedule_engine.dart';
 
 /// Tela "Hoje": responde "o que preciso fazer agora?" (§16 e §54).
@@ -37,6 +38,7 @@ class _HomeContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isPartner = ref.watch(isPartnerModeProvider);
     final pending = items.where((i) => !i.isDone).toList();
     final next = pending.isEmpty ? null : pending.first;
     final done = items.where((i) => i.status == DoseStatus.taken).length;
@@ -48,7 +50,12 @@ class _HomeContent extends ConsumerWidget {
           sliver: SliverList.list(
             children: [
               const _Header(),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
+              if (isPartner)
+                const _PartnerCaringActionsCard()
+              else
+                const _WomanPartnerLoveBanner(),
+              const SizedBox(height: 8),
               next == null
                   ? _AllDoneCard(hasDoses: items.isNotEmpty)
                   : _NextDoseCard(item: next),
@@ -75,13 +82,17 @@ class _HomeContent extends ConsumerWidget {
               itemBuilder: (_, i) => _DoseTile(item: items[i]),
             ),
           ),
-        const SliverPadding(
-          padding: EdgeInsets.fromLTRB(20, 24, 20, 32),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
           sliver: SliverList(
             delegate: SliverChildListDelegate.fixed([
-              _CycleCard(),
-              SizedBox(height: 16),
-              _QuickStats(),
+              const _CycleCard(),
+              if (isPartner) ...[
+                const SizedBox(height: 16),
+                const _PartnerCyclePhaseGuideCard(),
+              ],
+              const SizedBox(height: 16),
+              const _QuickStats(),
             ]),
           ),
         ),
@@ -763,6 +774,438 @@ class _StatTile extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(color: AppColors.textSecondary, height: 1.3),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PartnerCaringActionsCard extends StatelessWidget {
+  const _PartnerCaringActionsCard();
+
+  void _send(
+    BuildContext context,
+    String type,
+    String title,
+    String message,
+  ) async {
+    await CloudSyncService.instance.sendPartnerReaction(
+      type: type,
+      message: message,
+    );
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$title enviado com sucesso para sua parceira! 💖'),
+          backgroundColor: AppColors.violet,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  void _customMessageDialog(BuildContext context) {
+    final controller = TextEditingController(
+      text: 'Pensando em você e torcendo pelo seu bem-estar! Amo você ❤️',
+    );
+    showDialog(
+      context: context,
+      builder:
+          (ctx) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.favorite_rounded, color: AppColors.violet),
+                SizedBox(width: 8),
+                Text('Enviar Mensagem de Amor'),
+              ],
+            ),
+            content: TextField(
+              controller: controller,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                hintText: 'Escreva uma mensagem carinhosa...',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.violet,
+                ),
+                icon: const Icon(Icons.send_rounded, size: 16),
+                label: const Text('Enviar'),
+                onPressed: () {
+                  final text = controller.text.trim();
+                  Navigator.pop(ctx);
+                  if (text.isNotEmpty) {
+                    _send(context, 'love_note', 'Mensagem de amor', text);
+                  }
+                },
+              ),
+            ],
+          ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.violet.withValues(alpha: 0.12),
+            const Color(0xFF6366F1).withValues(alpha: 0.06),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.violet.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(
+                Icons.volunteer_activism_rounded,
+                color: AppColors.violet,
+                size: 22,
+              ),
+              SizedBox(width: 8),
+              Text(
+                'Enviar Carinho à Parceira',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: AppColors.violet,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Toque para enviar uma surpresa carinhosa no celular dela agora:',
+            style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _CarinhoButton(
+                  emoji: '☕',
+                  label: 'Oferecer Chá',
+                  onTap:
+                      () => _send(
+                        context,
+                        'tea',
+                        'Chá quentinho',
+                        'Seu amor preparou um chá quentinho para você com muito carinho ☕❤️',
+                      ),
+                ),
+                const SizedBox(width: 8),
+                _CarinhoButton(
+                  emoji: '💧',
+                  label: 'Lembrar de Água',
+                  onTap:
+                      () => _send(
+                        context,
+                        'water',
+                        'Lembrete de água',
+                        'Seu amor lembrou você de beber um copo d\'água fresquinha para se hidratar! 💧🌸',
+                      ),
+                ),
+                const SizedBox(width: 8),
+                _CarinhoButton(
+                  emoji: '💆‍♀️',
+                  label: 'Massagem',
+                  onTap:
+                      () => _send(
+                        context,
+                        'massage',
+                        'Convite de massagem',
+                        'Seu amor quer te fazer uma massagem relaxante para aliviar a tensão hoje! 💆‍♀️💖',
+                      ),
+                ),
+                const SizedBox(width: 8),
+                _CarinhoButton(
+                  emoji: '💌',
+                  label: 'Mensagem',
+                  onTap: () => _customMessageDialog(context),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CarinhoButton extends StatelessWidget {
+  const _CarinhoButton({
+    required this.emoji,
+    required this.label,
+    required this.onTap,
+  });
+
+  final String emoji;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      elevation: 1,
+      shadowColor: Colors.black.withValues(alpha: 0.05),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(emoji, style: const TextStyle(fontSize: 16)),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12.5,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WomanPartnerLoveBanner extends StatelessWidget {
+  const _WomanPartnerLoveBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<Map<String, dynamic>?>(
+      stream: CloudSyncService.instance.reactionStream,
+      builder: (context, snapshot) {
+        final data = snapshot.data;
+        if (data == null) return const SizedBox.shrink();
+        final message = data['message'] as String?;
+        if (message == null || message.isEmpty) return const SizedBox.shrink();
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                const Color(0xFFF43F5E).withValues(alpha: 0.12),
+                const Color(0xFFFB7185).withValues(alpha: 0.06),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: const Color(0xFFF43F5E).withValues(alpha: 0.3),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFFF1F2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.favorite_rounded,
+                  color: Color(0xFFF43F5E),
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Carinho do seu Parceiro 💕',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: Color(0xFFBE123C),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      message,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textPrimary,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PartnerCyclePhaseGuideCard extends ConsumerWidget {
+  const _PartnerCyclePhaseGuideCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final treatments =
+        ref.watch(activeTreatmentsProvider).valueOrNull ?? const [];
+    final cyclic =
+        treatments
+            .where(
+              (t) =>
+                  t.rule.type == ScheduleType.cycle &&
+                  (t.rule.pauseDays ?? 0) > 0,
+            )
+            .toList();
+    if (cyclic.isEmpty) return const SizedBox.shrink();
+
+    final info = CycleInfo.of(cyclic.first, DateTime.now());
+
+    String phaseName;
+    String empathyTip;
+    String practicalCare;
+    IconData icon;
+    Color color;
+
+    if (!info.isUsageDay) {
+      phaseName = 'Fase Menstrual (Pausa da cartela)';
+      empathyTip = 'Queda hormonal e possíveis cólicas ou desconforto físico.';
+      practicalCare =
+          'Ofereça bolsa morna, evite sobrecarregá-la com tarefas e seja o refúgio seguro dela.';
+      icon = Icons.spa_rounded;
+      color = const Color(0xFFE11D48);
+    } else if (info.dayOfCycle <= 5) {
+      phaseName = 'Início de Cartela';
+      empathyTip = 'O corpo está reiniciando o ciclo hormonal.';
+      practicalCare =
+          'Mantenha o carinho e ajude a lembrar do horário do comprimido com muito amor.';
+      icon = Icons.calendar_today_rounded;
+      color = AppColors.violet;
+    } else if (info.dayOfCycle <= 12) {
+      phaseName = 'Fase Folicular';
+      empathyTip =
+          'O estrogênio está subindo! Ela tende a ter mais ânimo, disposição e criatividade.';
+      practicalCare =
+          'Ótimo momento para planejar saídas a dois, passeios e conversas empolgantes.';
+      icon = Icons.wb_sunny_rounded;
+      color = const Color(0xFFF59E0B);
+    } else if (info.dayOfCycle <= 16) {
+      phaseName = 'Fase Fértil / Ovulatória (Correspondente)';
+      empathyTip = 'Pico de vitalidade, autoconfiança e atração no ciclo.';
+      practicalCare =
+          'Momento especial de conexão afetiva, elogios e cumplicidade.';
+      icon = Icons.favorite_rounded;
+      color = const Color(0xFFEC4899);
+    } else {
+      phaseName = 'Fase Lútea (Pré-Menstrual / TPM)';
+      empathyTip =
+          'A progesterona domina. Pode haver oscilações de humor, cansaço ou retenção de líquido.';
+      practicalCare =
+          'Muita paciência, ouvidos atentos sem julgamento, docinhos favoritos e aconchego.';
+      icon = Icons.nightlight_round;
+      color = const Color(0xFF8B5CF6);
+    }
+
+    return AppCard(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Guia do Ciclo para Você · Dia ${info.dayOfCycle}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: color,
+                      ),
+                    ),
+                    Text(
+                      phaseName,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            empathyTip,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceSoft,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.lightbulb_outline_rounded,
+                  size: 18,
+                  color: AppColors.teal,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    practicalCare,
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

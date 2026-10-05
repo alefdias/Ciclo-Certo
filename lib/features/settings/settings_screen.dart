@@ -8,6 +8,7 @@ import '../../app/theme/app_colors.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/app_widgets.dart';
 import '../../services/biometric_service.dart';
+import '../../services/medical_report_service.dart';
 
 /// Tela de Configurações e Preferências (§29).
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -232,26 +233,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(
-                    Icons.download_rounded,
+                    Icons.assignment_outlined,
                     color: AppColors.teal,
                   ),
                   title: const Text(
-                    'Exportar histórico (PDF/CSV)',
+                    'Relatório para Consulta Médica',
                     style: TextStyle(fontWeight: FontWeight.w600),
                   ),
-                  trailing: const Icon(
-                    Icons.chevron_right_rounded,
-                    color: AppColors.textMuted,
+                  subtitle: const Text(
+                    'Exportar histórico de sintomas, ciclo e adesão',
+                    style: TextStyle(fontSize: 13),
                   ),
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Exportação de dados disponível na Fase 5.',
-                        ),
+                  trailing: const Icon(
+                    Icons.share_rounded,
+                    color: AppColors.teal,
+                  ),
+                  onTap:
+                      () => MedicalReportService.instance.exportAndShare(
+                        context,
+                        ref,
                       ),
-                    );
-                  },
                 ),
               ],
             ),
