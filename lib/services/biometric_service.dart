@@ -57,7 +57,8 @@ class BiometricService {
 
   /// Executa o diálogo nativo de autenticação biométrica
   Future<bool> authenticate({
-    String reason = 'Confirme sua impressão digital para entrar no Ciclo Certo :Lembrete',
+    String reason =
+        'Confirme sua impressão digital para entrar no Ciclo Certo :Lembrete',
   }) async {
     try {
       final isAvailable = await isBiometricsAvailable();

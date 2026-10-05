@@ -6,33 +6,72 @@ import '../../models/enums.dart';
 import '../providers.dart';
 import 'app_widgets.dart';
 
+import '../../services/cloud_sync_service.dart';
+
 /// Ações de uma dose: Tomei / Adiar / Pular / Desfazer.
-Future<void> showDoseActions(BuildContext context, WidgetRef ref, DoseItem item) {
+Future<void> showDoseActions(
+  BuildContext context,
+  WidgetRef ref,
+  DoseItem item,
+) {
+  if (ref.read(isPartnerModeProvider)) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Modo Parceiro: apenas visualização.')),
+    );
+    return Future.value();
+  }
   return showModalBottomSheet<void>(
     context: context,
-    builder: (ctx) =>
-        _DoseActionsSheet(item: item, parentRef: ref, parentContext: context),
+    builder:
+        (ctx) => _DoseActionsSheet(
+          item: item,
+          parentRef: ref,
+          parentContext: context,
+        ),
   );
 }
 
-/// Registra "Tomei" com feedback visual.
-Future<void> takeDose(BuildContext context, WidgetRef ref, DoseItem item) async {
+/// Registra "Tomei" com feedback visual e sincronização em nuvem.
+Future<void> takeDose(
+  BuildContext context,
+  WidgetRef ref,
+  DoseItem item,
+) async {
+  if (ref.read(isPartnerModeProvider)) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Modo Parceiro: apenas visualização.')),
+    );
+    return;
+  }
+
   await ref
       .read(doseServiceProvider)
       .markTaken(item.occurrence, medicationId: item.medication.id);
+
+  // Sincroniza imediatamente com a nuvem para notificar o parceiro
+  final db = ref.read(databaseProvider);
+  CloudSyncService.instance.syncWomanToCloud(db);
+
   if (!context.mounted) return;
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(
-      content: Text('${item.medication.displayName} registrado como tomado ✓'),
-      action: SnackBarAction(
-        label: 'Desfazer',
-        textColor: AppColors.teal,
-        onPressed: () => ref
-            .read(doseServiceProvider)
-            .undo(item.occurrence, medicationId: item.medication.id),
+    ..showSnackBar(
+      SnackBar(
+        content: Text(
+          '${item.medication.displayName} registrado como tomado ✓',
+        ),
+        action: SnackBarAction(
+          label: 'Desfazer',
+          textColor: AppColors.teal,
+          onPressed: () async {
+            await ref
+                .read(doseServiceProvider)
+                .undo(item.occurrence, medicationId: item.medication.id);
+            CloudSyncService.instance.syncWomanToCloud(db);
+          },
+        ),
       ),
-    ));
+    );
 }
 
 class _DoseActionsSheet extends StatelessWidget {
@@ -49,7 +88,9 @@ class _DoseActionsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final service = parentRef.read(doseServiceProvider);
-    final time = TimeOfDay.fromDateTime(item.occurrence.scheduledAt).format(context);
+    final time = TimeOfDay.fromDateTime(
+      item.occurrence.scheduledAt,
+    ).format(context);
 
     return SafeArea(
       child: Padding(
@@ -58,18 +99,29 @@ class _DoseActionsSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Center(child: CategoryAvatar(category: item.medication.category, size: 64)),
+            Center(
+              child: CategoryAvatar(
+                category: item.medication.category,
+                size: 64,
+              ),
+            ),
             const SizedBox(height: 12),
-            Text(time,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.displaySmall),
-            Text(item.medication.displayName,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              time,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.displaySmall,
+            ),
+            Text(
+              item.medication.displayName,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 4),
-            Text(item.quantityLabel,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.textSecondary)),
+            Text(
+              item.quantityLabel,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.textSecondary),
+            ),
             const SizedBox(height: 8),
             Center(child: StatusChip(status: item.status, late: item.isLate)),
             const SizedBox(height: 20),
@@ -91,7 +143,12 @@ class _DoseActionsSheet extends StatelessWidget {
                       icon: const Icon(Icons.snooze_rounded),
                       label: const Text('Adiar 10 min'),
                       onPressed: () {
-                        service.snooze(item.occurrence, const Duration(minutes: 10));
+                        service.snooze(
+                          item.occurrence,
+                          const Duration(minutes: 10),
+                        );
+                        final db = parentRef.read(databaseProvider);
+                        CloudSyncService.instance.syncWomanToCloud(db);
                         Navigator.pop(context);
                       },
                     ),
@@ -104,6 +161,8 @@ class _DoseActionsSheet extends StatelessWidget {
                       label: const Text('Pular'),
                       onPressed: () {
                         service.markSkipped(item.occurrence);
+                        final db = parentRef.read(databaseProvider);
+                        CloudSyncService.instance.syncWomanToCloud(db);
                         Navigator.pop(context);
                       },
                     ),
@@ -117,7 +176,12 @@ class _DoseActionsSheet extends StatelessWidget {
                 icon: const Icon(Icons.undo_rounded),
                 label: const Text('Desfazer registro'),
                 onPressed: () {
-                  service.undo(item.occurrence, medicationId: item.medication.id);
+                  service.undo(
+                    item.occurrence,
+                    medicationId: item.medication.id,
+                  );
+                  final db = parentRef.read(databaseProvider);
+                  CloudSyncService.instance.syncWomanToCloud(db);
                   Navigator.pop(context);
                 },
               ),
@@ -129,10 +193,13 @@ class _DoseActionsSheet extends StatelessWidget {
   }
 
   ButtonStyle _outlined(Color c) => OutlinedButton.styleFrom(
-        foregroundColor: c,
-        side: BorderSide(color: c.withValues(alpha: 0.5), width: 1.5),
-        minimumSize: const Size.fromHeight(50),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        textStyle: const TextStyle(fontWeight: FontWeight.w700, fontFamily: 'Inter'),
-      );
+    foregroundColor: c,
+    side: BorderSide(color: c.withValues(alpha: 0.5), width: 1.5),
+    minimumSize: const Size.fromHeight(50),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    textStyle: const TextStyle(
+      fontWeight: FontWeight.w700,
+      fontFamily: 'Inter',
+    ),
+  );
 }

@@ -33,21 +33,23 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     final treatById = {for (final t in treatments) t.id: t};
 
     // Filtros
-    final filtered = records.where((r) {
-      if (_selectedFilter == 1) return r.status == DoseStatus.taken;
-      if (_selectedFilter == 2) {
-        return r.status == DoseStatus.skipped ||
-            r.status == DoseStatus.missed ||
-            r.status == DoseStatus.snoozed;
-      }
-      return true;
-    }).toList();
+    final filtered =
+        records.where((r) {
+          if (_selectedFilter == 1) return r.status == DoseStatus.taken;
+          if (_selectedFilter == 2) {
+            return r.status == DoseStatus.skipped ||
+                r.status == DoseStatus.missed ||
+                r.status == DoseStatus.snoozed;
+          }
+          return true;
+        }).toList();
 
     // Cálculo descritivo de adesão (§10)
     final total = records.length;
     final takenCount =
         records.where((r) => r.status == DoseStatus.taken).length;
-    final adherencePercent = total > 0 ? ((takenCount / total) * 100).round() : 100;
+    final adherencePercent =
+        total > 0 ? ((takenCount / total) * 100).round() : 100;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Histórico')),
@@ -63,21 +65,30 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Adesão ao tratamento',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w700, fontSize: 16)),
+                    const Text(
+                      'Adesão ao tratamento',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                    ),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.successSoft,
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: Text('$adherencePercent%',
-                          style: const TextStyle(
-                              color: AppColors.success,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 14)),
+                      child: Text(
+                        '$adherencePercent%',
+                        style: const TextStyle(
+                          color: AppColors.success,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -92,7 +103,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                       ? 'Nenhuma dose registrada ainda.'
                       : '$takenCount tomadas de $total registradas no histórico.',
                   style: const TextStyle(
-                      color: AppColors.textSecondary, fontSize: 13),
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
                 ),
               ],
             ),
@@ -123,7 +136,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             for (final record in filtered) ...[
               _HistoryTile(
                 record: record,
-                medication: medById[treatById[record.treatmentId]?.medicationId],
+                medication:
+                    medById[treatById[record.treatmentId]?.medicationId],
               ),
               const SizedBox(height: 10),
             ],
@@ -159,9 +173,10 @@ class _HistoryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final medName = medication?.displayName ?? 'Medicamento';
     final dateStr = DateFormat('dd/MM - HH:mm').format(record.scheduledAt);
-    final takenAtStr = record.takenAt != null
-        ? 'Tomado às ${DateFormat.Hm().format(record.takenAt!)}'
-        : null;
+    final takenAtStr =
+        record.takenAt != null
+            ? 'Tomado às ${DateFormat.Hm().format(record.takenAt!)}'
+            : null;
 
     return AppCard(
       padding: const EdgeInsets.all(14),
@@ -176,14 +191,20 @@ class _HistoryTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(medName,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w700, fontSize: 15)),
+                Text(
+                  medName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
                 const SizedBox(height: 2),
                 Text(
                   takenAtStr ?? dateStr,
                   style: const TextStyle(
-                      color: AppColors.textSecondary, fontSize: 13),
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
                 ),
               ],
             ),

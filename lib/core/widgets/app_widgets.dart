@@ -93,9 +93,14 @@ class GradientButton extends StatelessWidget {
                     Icon(icon, color: Colors.white, size: 22),
                     const SizedBox(width: 8),
                   ],
-                  Text(label,
-                      style: const TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16)),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -138,23 +143,62 @@ class StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (Color fg, Color bg, IconData icon, String label) = switch (status) {
-      DoseStatus.taken => (AppColors.success, AppColors.successSoft, Icons.check_circle_rounded, 'Tomado'),
-      DoseStatus.skipped => (AppColors.textSecondary, AppColors.surfaceSoft, Icons.redo_rounded, 'Pulado'),
-      DoseStatus.snoozed => (AppColors.blue, AppColors.infoSoft, Icons.snooze_rounded, 'Adiado'),
-      DoseStatus.missed => (AppColors.danger, AppColors.dangerSoft, Icons.close_rounded, 'Não registrado'),
-      DoseStatus.pending when late =>
-        (AppColors.danger, AppColors.dangerSoft, Icons.schedule_rounded, 'Atrasado'),
-      DoseStatus.pending => (AppColors.warning, AppColors.warningSoft, Icons.schedule_rounded, 'Aguardando'),
+      DoseStatus.taken => (
+        AppColors.success,
+        AppColors.successSoft,
+        Icons.check_circle_rounded,
+        'Tomado',
+      ),
+      DoseStatus.skipped => (
+        AppColors.textSecondary,
+        AppColors.surfaceSoft,
+        Icons.redo_rounded,
+        'Pulado',
+      ),
+      DoseStatus.snoozed => (
+        AppColors.blue,
+        AppColors.infoSoft,
+        Icons.snooze_rounded,
+        'Adiado',
+      ),
+      DoseStatus.missed => (
+        AppColors.danger,
+        AppColors.dangerSoft,
+        Icons.close_rounded,
+        'Não registrado',
+      ),
+      DoseStatus.pending when late => (
+        AppColors.danger,
+        AppColors.dangerSoft,
+        Icons.schedule_rounded,
+        'Atrasado',
+      ),
+      DoseStatus.pending => (
+        AppColors.warning,
+        AppColors.warningSoft,
+        Icons.schedule_rounded,
+        'Aguardando',
+      ),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(20),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 14, color: fg),
           const SizedBox(width: 4),
-          Text(label, style: TextStyle(color: fg, fontSize: 12, fontWeight: FontWeight.w700)),
+          Text(
+            label,
+            style: TextStyle(
+              color: fg,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ],
       ),
     );
@@ -175,7 +219,9 @@ class SectionTitle extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Expanded(child: Text(title, style: Theme.of(context).textTheme.titleLarge)),
+          Expanded(
+            child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+          ),
           if (action != null)
             TextButton(onPressed: onAction, child: Text(action!)),
         ],
@@ -201,11 +247,22 @@ class VelixLogo extends StatelessWidget {
           fit: BoxFit.contain,
         ),
         const SizedBox(width: 8),
-        Text('Ciclo ',
-            style: TextStyle(
-                fontSize: size, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
-        Text('Certo',
-            style: TextStyle(fontSize: size, fontWeight: FontWeight.w800, color: AppColors.teal)),
+        Text(
+          'Ciclo ',
+          style: TextStyle(
+            fontSize: size,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        Text(
+          'Certo',
+          style: TextStyle(
+            fontSize: size,
+            fontWeight: FontWeight.w800,
+            color: AppColors.teal,
+          ),
+        ),
       ],
     );
   }
@@ -213,7 +270,12 @@ class VelixLogo extends StatelessWidget {
 
 /// Barra de progresso com degradê.
 class GradientProgress extends StatelessWidget {
-  const GradientProgress({super.key, required this.value, this.height = 8, this.danger = false});
+  const GradientProgress({
+    super.key,
+    required this.value,
+    this.height = 8,
+    this.danger = false,
+  });
 
   final double value;
   final double height;
@@ -231,16 +293,20 @@ class GradientProgress extends StatelessWidget {
           tween: Tween(begin: 0, end: value.clamp(0, 1)),
           duration: const Duration(milliseconds: 700),
           curve: Curves.easeOutCubic,
-          builder: (_, v, __) => FractionallySizedBox(
-            widthFactor: v,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: danger
-                    ? const LinearGradient(colors: [Color(0xFFFB7185), AppColors.danger])
-                    : AppColors.brandGradient,
+          builder:
+              (_, v, __) => FractionallySizedBox(
+                widthFactor: v,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient:
+                        danger
+                            ? const LinearGradient(
+                              colors: [Color(0xFFFB7185), AppColors.danger],
+                            )
+                            : AppColors.brandGradient,
+                  ),
+                ),
               ),
-            ),
-          ),
         ),
       ),
     );
@@ -249,7 +315,12 @@ class GradientProgress extends StatelessWidget {
 
 /// Estado vazio padrão.
 class EmptyState extends StatelessWidget {
-  const EmptyState({super.key, required this.icon, required this.title, this.subtitle});
+  const EmptyState({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.subtitle,
+  });
 
   final IconData icon;
   final String title;
@@ -263,16 +334,25 @@ class EmptyState extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.all(18),
-            decoration: const BoxDecoration(color: AppColors.surfaceSoft, shape: BoxShape.circle),
+            decoration: const BoxDecoration(
+              color: AppColors.surfaceSoft,
+              shape: BoxShape.circle,
+            ),
             child: Icon(icon, size: 34, color: AppColors.violet),
           ),
           const SizedBox(height: 14),
-          Text(title, style: Theme.of(context).textTheme.titleMedium, textAlign: TextAlign.center),
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleMedium,
+            textAlign: TextAlign.center,
+          ),
           if (subtitle != null) ...[
             const SizedBox(height: 6),
-            Text(subtitle!,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.textSecondary)),
+            Text(
+              subtitle!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.textSecondary),
+            ),
           ],
         ],
       ),

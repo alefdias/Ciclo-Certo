@@ -141,9 +141,9 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro no login com Google: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro no login com Google: $e')));
         setState(() => _isLoading = false);
       }
     }
@@ -164,9 +164,9 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro no login com Apple: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro no login com Apple: $e')));
         setState(() => _isLoading = false);
       }
     }
@@ -216,14 +216,16 @@ class _LoginScreenState extends State<LoginScreen> {
         } else if (e.code == 'invalid-email') {
           msg = 'E-mail em formato inválido.';
         }
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(msg)));
         setState(() => _isLoading = false);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro: $e')));
         setState(() => _isLoading = false);
       }
     }
@@ -232,22 +234,23 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _switchAccount() async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Trocar de conta?'),
-        content: const Text(
-          'Você sairá da conta atual e precisará fazer um novo login com o Google.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Trocar de conta?'),
+            content: const Text(
+              'Você sairá da conta atual e precisará fazer um novo login com o Google.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Trocar de conta'),
+              ),
+            ],
           ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Trocar de conta'),
-          ),
-        ],
-      ),
     );
 
     if (confirm != true) return;
@@ -270,9 +273,9 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao sair da conta: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro ao sair da conta: $e')));
       }
     }
   }
@@ -290,20 +293,17 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isCheckingAuth) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-          child: _requiresBiometrics
-              ? _buildBiometricLockUI()
-              : _buildInitialLoginUI(),
+          child:
+              _requiresBiometrics
+                  ? _buildBiometricLockUI()
+                  : _buildInitialLoginUI(),
         ),
       ),
     );
@@ -322,20 +322,16 @@ class _LoginScreenState extends State<LoginScreen> {
         const Spacer(),
         // Logo & Título
         Center(
-          child: Image.asset(
-            'assets/icon/app_logo.png',
-            width: 88,
-            height: 88,
-          ),
+          child: Image.asset('assets/icon/app_logo.png', width: 88, height: 88),
         ),
         const SizedBox(height: 16),
         Text(
           'Ciclo Certo :Lembrete',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: AppColors.violet,
-                fontWeight: FontWeight.bold,
-              ),
+            color: AppColors.violet,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 32),
 
@@ -354,9 +350,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 backgroundColor: AppColors.violet.withValues(alpha: 0.2),
                 backgroundImage:
                     photoUrl != null ? NetworkImage(photoUrl) : null,
-                child: photoUrl == null
-                    ? const Icon(Icons.person, color: AppColors.violet, size: 28)
-                    : null,
+                child:
+                    photoUrl == null
+                        ? const Icon(
+                          Icons.person,
+                          color: AppColors.violet,
+                          size: 28,
+                        )
+                        : null,
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -400,9 +401,10 @@ class _LoginScreenState extends State<LoginScreen> {
         // Botão Central de Biometria
         Center(
           child: InkWell(
-            onTap: _isAuthenticatingBiometrics
-                ? null
-                : _authenticateWithBiometrics,
+            onTap:
+                _isAuthenticatingBiometrics
+                    ? null
+                    : _authenticateWithBiometrics,
             borderRadius: BorderRadius.circular(100),
             child: Container(
               width: 96,
@@ -418,15 +420,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ],
               ),
-              child: _isAuthenticatingBiometrics
-                  ? const Center(
-                      child: CircularProgressIndicator(color: Colors.white),
-                    )
-                  : const Icon(
-                      Icons.fingerprint_rounded,
-                      size: 54,
-                      color: Colors.white,
-                    ),
+              child:
+                  _isAuthenticatingBiometrics
+                      ? const Center(
+                        child: CircularProgressIndicator(color: Colors.white),
+                      )
+                      : const Icon(
+                        Icons.fingerprint_rounded,
+                        size: 54,
+                        color: Colors.white,
+                      ),
             ),
           ),
         ),
@@ -444,10 +447,7 @@ class _LoginScreenState extends State<LoginScreen> {
         const Text(
           'Sua conta está protegida por biometria',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 13,
-            color: AppColors.textSecondary,
-          ),
+          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
         ),
 
         const Spacer(),
@@ -485,9 +485,9 @@ class _LoginScreenState extends State<LoginScreen> {
             'Ciclo Certo :Lembrete',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: AppColors.violet,
-                  fontWeight: FontWeight.bold,
-                ),
+              color: AppColors.violet,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
@@ -495,9 +495,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 ? 'Crie sua conta para começar'
                 : 'Sua rotina de saúde organizada',
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 24),
 
@@ -513,7 +513,10 @@ class _LoginScreenState extends State<LoginScreen> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
             ),
           ),
           const SizedBox(height: 14),
@@ -532,22 +535,27 @@ class _LoginScreenState extends State<LoginScreen> {
                       ? Icons.visibility_outlined
                       : Icons.visibility_off_outlined,
                 ),
-                onPressed: () =>
-                    setState(() => _obscurePassword = !_obscurePassword),
+                onPressed:
+                    () => setState(() => _obscurePassword = !_obscurePassword),
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
             ),
           ),
           const SizedBox(height: 18),
 
           if (_isLoading)
-            const Center(child: Padding(
-              padding: EdgeInsets.all(16.0),
-              child: CircularProgressIndicator(),
-            ))
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: CircularProgressIndicator(),
+              ),
+            )
           else ...[
             // Botão Entrar / Cadastrar com E-mail
             FilledButton(
@@ -595,10 +603,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
                     'ou continue com',
-                    style: TextStyle(
-                      color: AppColors.textMuted,
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 13),
                   ),
                 ),
                 Expanded(child: Divider()),
@@ -642,11 +647,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
-              icon: const Icon(
-                Icons.apple,
-                size: 24,
-                color: Colors.white,
-              ),
+              icon: const Icon(Icons.apple, size: 24, color: Colors.white),
               label: const Text(
                 'Continuar com Apple',
                 style: TextStyle(
@@ -664,10 +665,7 @@ class _LoginScreenState extends State<LoginScreen> {
               onPressed: _navigatePostAuth,
               child: const Text(
                 'Continuar como convidado (offline)',
-                style: TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: 13,
-                ),
+                style: TextStyle(color: AppColors.textMuted, fontSize: 13),
               ),
             ),
           ],

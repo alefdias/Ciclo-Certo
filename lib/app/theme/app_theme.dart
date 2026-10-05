@@ -28,10 +28,26 @@ abstract final class AppTheme {
       scaffoldBackgroundColor: AppColors.background,
       splashFactory: InkSparkle.splashFactory,
       textTheme: const TextTheme(
-        displaySmall: TextStyle(fontSize: 40, fontWeight: FontWeight.w800, letterSpacing: -1.2),
-        headlineMedium: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -0.6),
-        headlineSmall: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.4),
-        titleLarge: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.2),
+        displaySmall: TextStyle(
+          fontSize: 40,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -1.2,
+        ),
+        headlineMedium: TextStyle(
+          fontSize: 26,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.6,
+        ),
+        headlineSmall: TextStyle(
+          fontSize: 22,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.4,
+        ),
+        titleLarge: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.2,
+        ),
         titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         titleSmall: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         bodyLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
@@ -71,8 +87,14 @@ abstract final class AppTheme {
         filled: true,
         fillColor: AppColors.surfaceSoft,
         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        border: OutlineInputBorder(borderRadius: radius, borderSide: BorderSide.none),
-        enabledBorder: OutlineInputBorder(borderRadius: radius, borderSide: BorderSide.none),
+        border: OutlineInputBorder(
+          borderRadius: radius,
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: radius,
+          borderSide: BorderSide.none,
+        ),
         focusedBorder: OutlineInputBorder(
           borderRadius: radius,
           borderSide: BorderSide(color: AppColors.violet, width: 1.5),
@@ -84,7 +106,11 @@ abstract final class AppTheme {
         selectedColor: AppColors.violet,
         side: BorderSide.none,
         shape: StadiumBorder(),
-        labelStyle: TextStyle(fontFamily: fontFamily, fontWeight: FontWeight.w600, fontSize: 13),
+        labelStyle: TextStyle(
+          fontFamily: fontFamily,
+          fontWeight: FontWeight.w600,
+          fontSize: 13,
+        ),
         padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       ),
       navigationBarTheme: NavigationBarThemeData(
@@ -97,13 +123,22 @@ abstract final class AppTheme {
           (s) => TextStyle(
             fontFamily: fontFamily,
             fontSize: 12,
-            fontWeight: s.contains(WidgetState.selected) ? FontWeight.w700 : FontWeight.w500,
-            color: s.contains(WidgetState.selected) ? AppColors.violet : AppColors.textSecondary,
+            fontWeight:
+                s.contains(WidgetState.selected)
+                    ? FontWeight.w700
+                    : FontWeight.w500,
+            color:
+                s.contains(WidgetState.selected)
+                    ? AppColors.violet
+                    : AppColors.textSecondary,
           ),
         ),
         iconTheme: WidgetStateProperty.resolveWith(
           (s) => IconThemeData(
-            color: s.contains(WidgetState.selected) ? AppColors.violet : AppColors.textSecondary,
+            color:
+                s.contains(WidgetState.selected)
+                    ? AppColors.violet
+                    : AppColors.textSecondary,
           ),
         ),
       ),
@@ -118,13 +153,22 @@ abstract final class AppTheme {
       snackBarTheme: const SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.textPrimary,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(14))),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(14)),
+        ),
       ),
-      dividerTheme: const DividerThemeData(color: AppColors.border, thickness: 1, space: 1),
+      dividerTheme: const DividerThemeData(
+        color: AppColors.border,
+        thickness: 1,
+        space: 1,
+      ),
       switchTheme: SwitchThemeData(
         thumbColor: const WidgetStatePropertyAll(Colors.white),
         trackColor: WidgetStateProperty.resolveWith(
-          (s) => s.contains(WidgetState.selected) ? AppColors.violet : AppColors.border,
+          (s) =>
+              s.contains(WidgetState.selected)
+                  ? AppColors.violet
+                  : AppColors.border,
         ),
         trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
       ),

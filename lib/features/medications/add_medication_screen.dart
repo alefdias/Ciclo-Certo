@@ -9,6 +9,7 @@ import '../../core/widgets/app_widgets.dart';
 import '../../models/enums.dart';
 import '../../models/models.dart';
 import '../../models/schedule_rule.dart';
+import '../../services/cloud_sync_service.dart';
 
 /// Sugestões pré-cadastradas no catálogo local (§21, §35).
 class _PresetMedication {
@@ -67,10 +68,7 @@ const _kPresets = [
     form: PharmaceuticalForm.tablet,
     category: MedicationCategory.continuousUse,
     stock: 28,
-    rule: ScheduleRule(
-      type: ScheduleType.continuous,
-      times: [DoseTime(8, 0)],
-    ),
+    rule: ScheduleRule(type: ScheduleType.continuous, times: [DoseTime(8, 0)]),
   ),
   _PresetMedication(
     name: 'Yaz',
@@ -107,10 +105,7 @@ const _kPresets = [
     form: PharmaceuticalForm.tablet,
     category: MedicationCategory.continuousUse,
     stock: 28,
-    rule: ScheduleRule(
-      type: ScheduleType.continuous,
-      times: [DoseTime(8, 0)],
-    ),
+    rule: ScheduleRule(type: ScheduleType.continuous, times: [DoseTime(8, 0)]),
   ),
   _PresetMedication(
     name: 'Diane 35',
@@ -231,10 +226,7 @@ const _kPresets = [
     form: PharmaceuticalForm.tablet,
     category: MedicationCategory.painFever,
     stock: 20,
-    rule: ScheduleRule(
-      type: ScheduleType.asNeeded,
-      times: [],
-    ),
+    rule: ScheduleRule(type: ScheduleType.asNeeded, times: []),
   ),
   _PresetMedication(
     name: 'Ibuprofeno',
@@ -243,10 +235,7 @@ const _kPresets = [
     form: PharmaceuticalForm.tablet,
     category: MedicationCategory.painFever,
     stock: 20,
-    rule: ScheduleRule(
-      type: ScheduleType.asNeeded,
-      times: [],
-    ),
+    rule: ScheduleRule(type: ScheduleType.asNeeded, times: []),
   ),
   _PresetMedication(
     name: 'Paracetamol',
@@ -255,10 +244,7 @@ const _kPresets = [
     form: PharmaceuticalForm.tablet,
     category: MedicationCategory.painFever,
     stock: 20,
-    rule: ScheduleRule(
-      type: ScheduleType.asNeeded,
-      times: [],
-    ),
+    rule: ScheduleRule(type: ScheduleType.asNeeded, times: []),
   ),
   _PresetMedication(
     name: 'Amoxicilina',
@@ -276,12 +262,22 @@ const _kPresets = [
   ),
 ];
 
-/// Tela completa de cadastro de medicamento e tratamento (§19, §20).
+/// Tela completa de cadastro e edição de medicamento e tratamento (§19, §20).
 class AddMedicationScreen extends ConsumerStatefulWidget {
-  const AddMedicationScreen({super.key});
+  const AddMedicationScreen({
+    super.key,
+    this.initialMedication,
+    this.initialTreatment,
+    this.initialStock,
+  });
+
+  final Medication? initialMedication;
+  final Treatment? initialTreatment;
+  final Stock? initialStock;
 
   @override
-  ConsumerState<AddMedicationScreen> createState() => _AddMedicationScreenState();
+  ConsumerState<AddMedicationScreen> createState() =>
+      _AddMedicationScreenState();
 }
 
 class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
@@ -301,7 +297,11 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
   MedicationCategory _category = MedicationCategory.continuousUse;
   ScheduleType _scheduleType = ScheduleType.continuous;
 
-  DateTime _startDate = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+  DateTime _startDate = DateTime(
+    DateTime.now().year,
+    DateTime.now().month,
+    DateTime.now().day,
+  );
 
   bool _isAlreadyTaking = false;
   DateTime? _lastDayBeforePause;
@@ -313,6 +313,41 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
   @override
   void initState() {
     super.initState();
+
+    if (widget.initialMedication != null) {
+      final m = widget.initialMedication!;
+      _nameController.text = m.name;
+      _concentrationController.text = m.concentration ?? '';
+      _activeIngredientController.text = m.activeIngredient ?? '';
+      _form = m.form;
+      _category = m.category;
+    }
+
+    if (widget.initialStock != null) {
+      final s = widget.initialStock!;
+      _stockController.text = s.quantity.toInt().toString();
+      _lowStockLimitController.text = s.lowStockLimit.toInt().toString();
+    }
+
+    if (widget.initialTreatment != null) {
+      final t = widget.initialTreatment!;
+      _startDate = t.startDate;
+      _scheduleType = t.rule.type;
+      _times.addAll(t.rule.times);
+      if (t.rule.intervalHours != null) {
+        _intervalHoursController.text = t.rule.intervalHours.toString();
+      }
+      if (t.rule.durationDays != null) {
+        _durationDaysController.text = t.rule.durationDays.toString();
+      }
+      if (t.rule.usageDays != null) {
+        _usageDaysController.text = t.rule.usageDays.toString();
+      }
+      if (t.rule.pauseDays != null) {
+        _pauseDaysController.text = t.rule.pauseDays.toString();
+      }
+    }
+
     _nameController.addListener(_onNameChanged);
     _usageDaysController.addListener(_onCycleSettingsChanged);
     _pauseDaysController.addListener(_onCycleSettingsChanged);
@@ -333,7 +368,8 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
     }
     return _kPresets.where((p) {
       final nameMatches = p.name.toLowerCase().contains(query);
-      final activeMatches = p.activeIngredient != null &&
+      final activeMatches =
+          p.activeIngredient != null &&
           p.activeIngredient!.toLowerCase().contains(query);
       return nameMatches || activeMatches;
     }).toList();
@@ -348,7 +384,11 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
   }
 
   void _updateCalculatedStartDate() {
-    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    final today = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    );
     if (!_isAlreadyTaking) return;
 
     if (_scheduleType == ScheduleType.cycle) {
@@ -397,7 +437,11 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
   }
 
   Future<void> _pickLastDayBeforePause() async {
-    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    final today = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    );
     final picked = await showDatePicker(
       context: context,
       initialDate: _lastDayBeforePause ?? today.add(const Duration(days: 3)),
@@ -451,11 +495,11 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
       _form = preset.form;
       _category = preset.category;
       _scheduleType = preset.rule.type;
-      
+
       if (_times.isEmpty) {
         _times.addAll(preset.rule.times);
       }
-      
+
       _stockController.text = preset.stock.toInt().toString();
 
       if (preset.rule.durationDays != null) {
@@ -506,11 +550,13 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     if (_scheduleType != ScheduleType.asNeeded && _times.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Por favor, adicione pelo menos um horário para a medicação.'),
+          content: Text(
+            'Por favor, adicione pelo menos um horário para a medicação.',
+          ),
           backgroundColor: AppColors.danger,
         ),
       );
@@ -520,36 +566,42 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
     setState(() => _isLoading = true);
 
     try {
-      const uuid = Uuid();
-      final medId = 'med-${uuid.v4()}';
-      final treatId = 'tr-${uuid.v4()}';
+      final isEditing = widget.initialMedication != null;
+      final medId = widget.initialMedication?.id ?? 'med-${const Uuid().v4()}';
+      final treatId = widget.initialTreatment?.id ?? 'tr-${const Uuid().v4()}';
 
       final rule = ScheduleRule(
         type: _scheduleType,
         times: _scheduleType == ScheduleType.asNeeded ? const [] : _times,
-        intervalHours: _scheduleType == ScheduleType.intervalHours
-            ? int.tryParse(_intervalHoursController.text) ?? 8
-            : null,
-        durationDays: _scheduleType == ScheduleType.durationDays
-            ? int.tryParse(_durationDaysController.text) ?? 7
-            : null,
-        usageDays: _scheduleType == ScheduleType.cycle
-            ? int.tryParse(_usageDaysController.text) ?? 21
-            : null,
-        pauseDays: _scheduleType == ScheduleType.cycle
-            ? int.tryParse(_pauseDaysController.text) ?? 7
-            : null,
+        intervalHours:
+            _scheduleType == ScheduleType.intervalHours
+                ? int.tryParse(_intervalHoursController.text) ?? 8
+                : null,
+        durationDays:
+            _scheduleType == ScheduleType.durationDays
+                ? int.tryParse(_durationDaysController.text) ?? 7
+                : null,
+        usageDays:
+            _scheduleType == ScheduleType.cycle
+                ? int.tryParse(_usageDaysController.text) ?? 21
+                : null,
+        pauseDays:
+            _scheduleType == ScheduleType.cycle
+                ? int.tryParse(_pauseDaysController.text) ?? 7
+                : null,
       );
 
       final medication = Medication(
         id: medId,
         name: _nameController.text.trim(),
-        concentration: _concentrationController.text.trim().isEmpty
-            ? null
-            : _concentrationController.text.trim(),
-        activeIngredient: _activeIngredientController.text.trim().isEmpty
-            ? null
-            : _activeIngredientController.text.trim(),
+        concentration:
+            _concentrationController.text.trim().isEmpty
+                ? null
+                : _concentrationController.text.trim(),
+        activeIngredient:
+            _activeIngredientController.text.trim().isEmpty
+                ? null
+                : _activeIngredientController.text.trim(),
         form: _form,
         category: _category,
       );
@@ -572,17 +624,23 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
         lowStockLimit: lowLimit,
       );
 
-      await ref.read(medicationRepositoryProvider).save(
-            medication: medication,
-            treatment: treatment,
-            stock: stock,
-          );
+      await ref
+          .read(medicationRepositoryProvider)
+          .save(medication: medication, treatment: treatment, stock: stock);
+
+      // Sincroniza imediatamente com a nuvem para o parceiro receber na hora
+      final db = ref.read(databaseProvider);
+      CloudSyncService.instance.syncWomanToCloud(db);
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${medication.displayName} cadastrado com sucesso! ✓'),
+          content: Text(
+            isEditing
+                ? '${medication.displayName} atualizado com sucesso! ✓'
+                : '${medication.displayName} cadastrado com sucesso! ✓',
+          ),
           backgroundColor: AppColors.success,
         ),
       );
@@ -592,7 +650,7 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Erro ao cadastrar: $e'),
+          content: Text('Erro ao salvar: $e'),
           backgroundColor: AppColors.danger,
         ),
       );
@@ -603,9 +661,11 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.initialMedication != null;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Novo Medicamento'),
+        title: Text(isEditing ? 'Editar Medicamento' : 'Novo Medicamento'),
       ),
       body: Form(
         key: _formKey,
@@ -646,22 +706,28 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                 decoration: BoxDecoration(
                   color: AppColors.successSoft,
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+                  border: Border.all(
+                    color: AppColors.success.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.auto_awesome_rounded,
-                            color: AppColors.success, size: 20),
+                        const Icon(
+                          Icons.auto_awesome_rounded,
+                          color: AppColors.success,
+                          size: 20,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           'Esquema identificado: ${_identifiedPreset!.name}',
                           style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF047857),
-                              fontSize: 14),
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF047857),
+                            fontSize: 14,
+                          ),
                         ),
                       ],
                     ),
@@ -669,7 +735,9 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                     Text(
                       'Regra: ${_identifiedPreset!.rule.summary}. Os campos abaixo foram preenchidos para sua confirmação.',
                       style: const TextStyle(
-                          color: Color(0xFF065F46), fontSize: 12.5),
+                        color: Color(0xFF065F46),
+                        fontSize: 12.5,
+                      ),
                     ),
                   ],
                 ),
@@ -688,20 +756,24 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                     decoration: InputDecoration(
                       labelText: 'Nome do medicamento *',
                       hintText: 'Ex: Ciclo 21, Selene, Yaz, Dipirona',
-                      suffixIcon: _nameController.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear_rounded, size: 20),
-                              onPressed: () {
-                                _nameController.clear();
-                                setState(() {
-                                  _identifiedPreset = null;
-                                });
-                              },
-                            )
-                          : null,
+                      suffixIcon:
+                          _nameController.text.isNotEmpty
+                              ? IconButton(
+                                icon: const Icon(Icons.clear_rounded, size: 20),
+                                onPressed: () {
+                                  _nameController.clear();
+                                  setState(() {
+                                    _identifiedPreset = null;
+                                  });
+                                },
+                              )
+                              : null,
                     ),
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? 'Informe o nome' : null,
+                    validator:
+                        (v) =>
+                            v == null || v.trim().isEmpty
+                                ? 'Informe o nome'
+                                : null,
                   ),
                   if (_matchingPresets.isNotEmpty) ...[
                     const SizedBox(height: 8),
@@ -710,7 +782,8 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                            color: AppColors.violet.withValues(alpha: 0.3)),
+                          color: AppColors.violet.withValues(alpha: 0.3),
+                        ),
                         boxShadow: [
                           BoxShadow(
                             color: AppColors.violet.withValues(alpha: 0.08),
@@ -726,8 +799,11 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
                             child: Row(
                               children: [
-                                const Icon(Icons.auto_awesome_rounded,
-                                    size: 16, color: AppColors.violet),
+                                const Icon(
+                                  Icons.auto_awesome_rounded,
+                                  size: 16,
+                                  color: AppColors.violet,
+                                ),
                                 const SizedBox(width: 6),
                                 const Text(
                                   'Sugestões encontradas (toque para autopreencher):',
@@ -758,7 +834,9 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                               title: Text(
                                 preset.name,
                                 style: const TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 14),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
                               ),
                               subtitle: Text(
                                 preset.activeIngredient != null &&
@@ -766,15 +844,17 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                                     ? '${preset.activeIngredient} · ${preset.rule.summary}'
                                     : preset.rule.summary,
                                 style: const TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.textSecondary),
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                               trailing: const Icon(
-                                  Icons.arrow_forward_ios_rounded,
-                                  size: 14,
-                                  color: AppColors.violet),
+                                Icons.arrow_forward_ios_rounded,
+                                size: 14,
+                                color: AppColors.violet,
+                              ),
                               onTap: () {
                                 FocusScope.of(context).unfocus();
                                 _applyPreset(preset);
@@ -806,7 +886,10 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                             for (final f in PharmaceuticalForm.values)
                               DropdownMenuItem(
                                 value: f,
-                                child: Text(f.label, overflow: TextOverflow.ellipsis),
+                                child: Text(
+                                  f.label,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                           ],
                           onChanged: (v) {
@@ -829,8 +912,6 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
             ),
             const SizedBox(height: 20),
 
-
-
             // 2. Categoria
             const SectionTitle('Categoria'),
             AppCard(
@@ -844,13 +925,19 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                       avatar: Icon(
                         CategoryStyle.of(cat).icon,
                         size: 16,
-                        color: _category == cat ? Colors.white : CategoryStyle.of(cat).color,
+                        color:
+                            _category == cat
+                                ? Colors.white
+                                : CategoryStyle.of(cat).color,
                       ),
                       label: Text(cat.label),
                       selected: _category == cat,
                       selectedColor: AppColors.violet,
                       labelStyle: TextStyle(
-                        color: _category == cat ? Colors.white : AppColors.textPrimary,
+                        color:
+                            _category == cat
+                                ? Colors.white
+                                : AppColors.textPrimary,
                         fontWeight: FontWeight.w600,
                         fontSize: 12.5,
                       ),
@@ -872,13 +959,12 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                   DropdownButtonFormField<ScheduleType>(
                     // ignore: deprecated_member_use
                     value: _scheduleType,
-                    decoration: const InputDecoration(labelText: 'Tipo de esquema'),
+                    decoration: const InputDecoration(
+                      labelText: 'Tipo de esquema',
+                    ),
                     items: [
                       for (final st in ScheduleType.values)
-                        DropdownMenuItem(
-                          value: st,
-                          child: Text(st.label),
-                        ),
+                        DropdownMenuItem(value: st, child: Text(st.label)),
                     ],
                     onChanged: (v) {
                       if (v != null) setState(() => _scheduleType = v);
@@ -943,7 +1029,10 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                   if (_scheduleType != ScheduleType.asNeeded) ...[
                     const Text(
                       'Horários das doses:',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Wrap(
@@ -952,12 +1041,16 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                       children: [
                         for (int i = 0; i < _times.length; i++)
                           InputChip(
-                            avatar: const Icon(Icons.schedule_rounded, size: 16),
+                            avatar: const Icon(
+                              Icons.schedule_rounded,
+                              size: 16,
+                            ),
                             label: Text(_times[i].format()),
                             onPressed: () => _pickTime(i),
-                            onDeleted: _times.length > 1
-                                ? () => setState(() => _times.removeAt(i))
-                                : null,
+                            onDeleted:
+                                _times.length > 1
+                                    ? () => setState(() => _times.removeAt(i))
+                                    : null,
                           ),
                         ActionChip(
                           avatar: const Icon(Icons.add_rounded, size: 16),
@@ -1009,7 +1102,8 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
 
             // Botão Salvar
             GradientButton(
-              label: _isLoading ? 'Salvando...' : 'Confirmar e Salvar Tratamento',
+              label:
+                  _isLoading ? 'Salvando...' : 'Confirmar e Salvar Tratamento',
               icon: Icons.check_circle_rounded,
               onPressed: _isLoading ? null : _save,
             ),
@@ -1086,8 +1180,11 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.calendar_today_rounded,
-                          color: AppColors.violet, size: 20),
+                      const Icon(
+                        Icons.calendar_today_rounded,
+                        color: AppColors.violet,
+                        size: 20,
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -1096,14 +1193,17 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                             const Text(
                               'Data da 1ª dose / início:',
                               style: TextStyle(
-                                  fontSize: 11.5,
-                                  color: AppColors.textSecondary),
+                                fontSize: 11.5,
+                                color: AppColors.textSecondary,
+                              ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               _formatDate(_startDate),
                               style: const TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 14),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
                             ),
                           ],
                         ),
@@ -1132,8 +1232,11 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
   }
 
   Widget _buildCycleTakingSection() {
-    final today =
-        DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    final today = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1149,8 +1252,11 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
             children: [
               const Row(
                 children: [
-                  Icon(Icons.pause_circle_outline_rounded,
-                      color: AppColors.violet, size: 20),
+                  Icon(
+                    Icons.pause_circle_outline_rounded,
+                    color: AppColors.violet,
+                    size: 20,
+                  ),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -1169,18 +1275,24 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                 onTap: _pickLastDayBeforePause,
                 borderRadius: BorderRadius.circular(10),
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                        color: AppColors.violet.withValues(alpha: 0.35)),
+                      color: AppColors.violet.withValues(alpha: 0.35),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.event_available_rounded,
-                          color: AppColors.violet, size: 22),
+                      const Icon(
+                        Icons.event_available_rounded,
+                        color: AppColors.violet,
+                        size: 22,
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -1189,8 +1301,9 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                             const Text(
                               'Último comprimido antes da pausa:',
                               style: TextStyle(
-                                  fontSize: 11.5,
-                                  color: AppColors.textSecondary),
+                                fontSize: 11.5,
+                                color: AppColors.textSecondary,
+                              ),
                             ),
                             Text(
                               _lastDayBeforePause != null
@@ -1205,8 +1318,11 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                           ],
                         ),
                       ),
-                      const Icon(Icons.arrow_forward_ios_rounded,
-                          size: 14, color: AppColors.textSecondary),
+                      const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 14,
+                        color: AppColors.textSecondary,
+                      ),
                     ],
                   ),
                 ),
@@ -1215,9 +1331,10 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
               const Text(
                 'Atalhos rápidos para o término da cartela:',
                 style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary),
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                ),
               ),
               const SizedBox(height: 6),
               SingleChildScrollView(
@@ -1226,24 +1343,33 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                   children: [
                     for (final days in [1, 2, 3, 5, 7, 10, 14]) ...[
                       ChoiceChip(
-                        label: Text(days == 1 ? 'Termina hoje' : 'Faltam $days dias'),
-                        selected: _lastDayBeforePause != null &&
-                            _daysBetween(today, _lastDayBeforePause!) == days - 1,
+                        label: Text(
+                          days == 1 ? 'Termina hoje' : 'Faltam $days dias',
+                        ),
+                        selected:
+                            _lastDayBeforePause != null &&
+                            _daysBetween(today, _lastDayBeforePause!) ==
+                                days - 1,
                         onSelected: (_) {
                           setState(() {
-                            _lastDayBeforePause =
-                                today.add(Duration(days: days - 1));
+                            _lastDayBeforePause = today.add(
+                              Duration(days: days - 1),
+                            );
                             _updateCalculatedStartDate();
                           });
                         },
                         labelStyle: TextStyle(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w600,
-                          color: (_lastDayBeforePause != null &&
-                                  _daysBetween(today, _lastDayBeforePause!) ==
-                                      days - 1)
-                              ? Colors.white
-                              : AppColors.textPrimary,
+                          color:
+                              (_lastDayBeforePause != null &&
+                                      _daysBetween(
+                                            today,
+                                            _lastDayBeforePause!,
+                                          ) ==
+                                          days - 1)
+                                  ? Colors.white
+                                  : AppColors.textPrimary,
                         ),
                         selectedColor: AppColors.violet,
                       ),
@@ -1264,8 +1390,11 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
   }
 
   Widget _buildCycleSummaryCard() {
-    final today =
-        DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    final today = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    );
     final usage = int.tryParse(_usageDaysController.text) ?? 21;
     final pause = int.tryParse(_pauseDaysController.text) ?? 7;
     final lastDay = _lastDayBeforePause!;
@@ -1289,8 +1418,11 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
         children: [
           const Row(
             children: [
-              Icon(Icons.check_circle_rounded,
-                  color: AppColors.success, size: 18),
+              Icon(
+                Icons.check_circle_rounded,
+                color: AppColors.success,
+                size: 18,
+              ),
               SizedBox(width: 8),
               Text(
                 'Ciclo sincronizado automaticamente',
@@ -1321,9 +1453,10 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
           Text(
             '• Início da próxima cartela: ${_formatDate(nextCycleStart)}.',
             style: const TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF047857)),
+              fontSize: 12.5,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF047857),
+            ),
           ),
         ],
       ),
@@ -1331,8 +1464,11 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
   }
 
   Widget _buildDurationTakingSection() {
-    final today =
-        DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    final today = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    );
     final duration = int.tryParse(_durationDaysController.text) ?? 7;
 
     return Column(
@@ -1369,18 +1505,24 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                 onTap: _pickLastDayBeforePause,
                 borderRadius: BorderRadius.circular(10),
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                        color: AppColors.violet.withValues(alpha: 0.35)),
+                      color: AppColors.violet.withValues(alpha: 0.35),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.event_available_rounded,
-                          color: AppColors.violet, size: 22),
+                      const Icon(
+                        Icons.event_available_rounded,
+                        color: AppColors.violet,
+                        size: 22,
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -1389,8 +1531,9 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                             const Text(
                               'Último dia do tratamento:',
                               style: TextStyle(
-                                  fontSize: 11.5,
-                                  color: AppColors.textSecondary),
+                                fontSize: 11.5,
+                                color: AppColors.textSecondary,
+                              ),
                             ),
                             Text(
                               _lastDayBeforePause != null
@@ -1405,8 +1548,11 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                           ],
                         ),
                       ),
-                      const Icon(Icons.arrow_forward_ios_rounded,
-                          size: 14, color: AppColors.textSecondary),
+                      const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 14,
+                        color: AppColors.textSecondary,
+                      ),
                     ],
                   ),
                 ),
@@ -1415,9 +1561,10 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
               const Text(
                 'Atalhos rápidos:',
                 style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary),
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                ),
               ),
               const SizedBox(height: 6),
               SingleChildScrollView(
@@ -1426,24 +1573,33 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                   children: [
                     for (final days in [1, 2, 3, 5, 7, 10]) ...[
                       ChoiceChip(
-                        label: Text(days == 1 ? 'Termina hoje' : 'Faltam $days dias'),
-                        selected: _lastDayBeforePause != null &&
-                            _daysBetween(today, _lastDayBeforePause!) == days - 1,
+                        label: Text(
+                          days == 1 ? 'Termina hoje' : 'Faltam $days dias',
+                        ),
+                        selected:
+                            _lastDayBeforePause != null &&
+                            _daysBetween(today, _lastDayBeforePause!) ==
+                                days - 1,
                         onSelected: (_) {
                           setState(() {
-                            _lastDayBeforePause =
-                                today.add(Duration(days: days - 1));
+                            _lastDayBeforePause = today.add(
+                              Duration(days: days - 1),
+                            );
                             _updateCalculatedStartDate();
                           });
                         },
                         labelStyle: TextStyle(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w600,
-                          color: (_lastDayBeforePause != null &&
-                                  _daysBetween(today, _lastDayBeforePause!) ==
-                                      days - 1)
-                              ? Colors.white
-                              : AppColors.textPrimary,
+                          color:
+                              (_lastDayBeforePause != null &&
+                                      _daysBetween(
+                                            today,
+                                            _lastDayBeforePause!,
+                                          ) ==
+                                          days - 1)
+                                  ? Colors.white
+                                  : AppColors.textPrimary,
                         ),
                         selectedColor: AppColors.violet,
                       ),
@@ -1464,8 +1620,11 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
   }
 
   Widget _buildDurationSummaryCard(int duration) {
-    final today =
-        DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    final today = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    );
     final lastDay = _lastDayBeforePause!;
     final daysLeft = lastDay.difference(today).inDays + 1;
     final currentDay = (duration - daysLeft + 1).clamp(1, duration);
@@ -1483,8 +1642,11 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
         children: [
           const Row(
             children: [
-              Icon(Icons.check_circle_rounded,
-                  color: AppColors.success, size: 18),
+              Icon(
+                Icons.check_circle_rounded,
+                color: AppColors.success,
+                size: 18,
+              ),
               SizedBox(width: 8),
               Text(
                 'Duração calculada',
@@ -1524,8 +1686,11 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
         children: [
           const Row(
             children: [
-              Icon(Icons.access_time_rounded,
-                  color: AppColors.violet, size: 20),
+              Icon(
+                Icons.access_time_rounded,
+                color: AppColors.violet,
+                size: 20,
+              ),
               SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -1549,12 +1714,16 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                    color: AppColors.violet.withValues(alpha: 0.35)),
+                  color: AppColors.violet.withValues(alpha: 0.35),
+                ),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.calendar_month_rounded,
-                      color: AppColors.violet, size: 22),
+                  const Icon(
+                    Icons.calendar_month_rounded,
+                    color: AppColors.violet,
+                    size: 22,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -1563,8 +1732,9 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                         const Text(
                           'Data aproximada que você começou:',
                           style: TextStyle(
-                              fontSize: 11.5,
-                              color: AppColors.textSecondary),
+                            fontSize: 11.5,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                         Text(
                           _formatDate(_startDate),
@@ -1577,8 +1747,11 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                       ],
                     ),
                   ),
-                  const Icon(Icons.edit_calendar_rounded,
-                      size: 18, color: AppColors.violet),
+                  const Icon(
+                    Icons.edit_calendar_rounded,
+                    size: 18,
+                    color: AppColors.violet,
+                  ),
                 ],
               ),
             ),
@@ -1608,15 +1781,16 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
             color: isSelected ? AppColors.violet : AppColors.border,
             width: isSelected ? 2 : 1,
           ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: AppColors.violet.withValues(alpha: 0.25),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  )
-                ]
-              : null,
+          boxShadow:
+              isSelected
+                  ? [
+                    BoxShadow(
+                      color: AppColors.violet.withValues(alpha: 0.25),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
+                  : null,
         ),
         child: Column(
           children: [
@@ -1641,9 +1815,10 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 10.5,
-                color: isSelected
-                    ? Colors.white.withValues(alpha: 0.85)
-                    : AppColors.textSecondary,
+                color:
+                    isSelected
+                        ? Colors.white.withValues(alpha: 0.85)
+                        : AppColors.textSecondary,
               ),
             ),
           ],

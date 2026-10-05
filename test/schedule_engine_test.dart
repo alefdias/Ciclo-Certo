@@ -4,7 +4,8 @@ import 'package:velix_med/models/models.dart';
 import 'package:velix_med/models/schedule_rule.dart';
 import 'package:velix_med/services/schedule_engine/schedule_engine.dart';
 
-Treatment _t(ScheduleRule rule, {DateTime? start, double dose = 1}) => Treatment(
+Treatment _t(ScheduleRule rule, {DateTime? start, double dose = 1}) =>
+    Treatment(
       id: 't1',
       medicationId: 'm1',
       startDate: start ?? DateTime(2026, 10, 3),
@@ -18,62 +19,91 @@ void main() {
 
   group('Uso diário / contínuo', () {
     test('1x ao dia gera uma dose por dia, sem fim', () {
-      final t = _t(const ScheduleRule(type: ScheduleType.continuous, times: [t8]));
-      final doses = engine.generate(t,
-          from: DateTime(2026, 10, 3), to: DateTime(2026, 11, 3));
+      final t = _t(
+        const ScheduleRule(type: ScheduleType.continuous, times: [t8]),
+      );
+      final doses = engine.generate(
+        t,
+        from: DateTime(2026, 10, 3),
+        to: DateTime(2026, 11, 3),
+      );
       expect(doses.length, 31);
       expect(doses.first.scheduledAt, DateTime(2026, 10, 3, 8));
     });
 
     test('3x ao dia em ordem cronológica', () {
-      final t = _t(const ScheduleRule(type: ScheduleType.timesPerDay, times: [
-        DoseTime(20, 0),
-        DoseTime(8, 0),
-        DoseTime(14, 0),
-      ]));
+      final t = _t(
+        const ScheduleRule(
+          type: ScheduleType.timesPerDay,
+          times: [DoseTime(20, 0), DoseTime(8, 0), DoseTime(14, 0)],
+        ),
+      );
       final doses = engine.forDay([t], DateTime(2026, 10, 3));
       expect(doses.map((d) => d.scheduledAt.hour), [8, 14, 20]);
     });
 
     test('não gera doses antes da data de início', () {
-      final t = _t(const ScheduleRule(type: ScheduleType.continuous, times: [t8]));
+      final t = _t(
+        const ScheduleRule(type: ScheduleType.continuous, times: [t8]),
+      );
       expect(engine.forDay([t], DateTime(2026, 10, 2)), isEmpty);
     });
 
     test('horário duplicado não gera dose duplicada', () {
-      final t = _t(const ScheduleRule(
-          type: ScheduleType.timesPerDay, times: [t8, t8]));
+      final t = _t(
+        const ScheduleRule(type: ScheduleType.timesPerDay, times: [t8, t8]),
+      );
       expect(engine.forDay([t], DateTime(2026, 10, 3)).length, 1);
     });
   });
 
   group('Duração e data final', () {
     test('7 dias gera exatamente 7 doses (03/10 a 09/10)', () {
-      final t = _t(const ScheduleRule(
-          type: ScheduleType.durationDays, times: [t8], durationDays: 7));
-      final doses = engine.generate(t,
-          from: DateTime(2026, 10, 1), to: DateTime(2026, 12, 1));
+      final t = _t(
+        const ScheduleRule(
+          type: ScheduleType.durationDays,
+          times: [t8],
+          durationDays: 7,
+        ),
+      );
+      final doses = engine.generate(
+        t,
+        from: DateTime(2026, 10, 1),
+        to: DateTime(2026, 12, 1),
+      );
       expect(doses.length, 7);
       expect(doses.last.scheduledAt, DateTime(2026, 10, 9, 8));
     });
 
     test('5 dias, 2x ao dia = 10 doses', () {
-      final t = _t(const ScheduleRule(
+      final t = _t(
+        const ScheduleRule(
           type: ScheduleType.durationDays,
           times: [t8, DoseTime(20, 0)],
-          durationDays: 5));
+          durationDays: 5,
+        ),
+      );
       expect(
-          engine
-              .generate(t, from: DateTime(2026, 10, 1), to: DateTime(2027))
-              .length,
-          10);
+        engine
+            .generate(t, from: DateTime(2026, 10, 1), to: DateTime(2027))
+            .length,
+        10,
+      );
     });
 
     test('data final é inclusiva', () {
-      final t = _t(ScheduleRule(
-          type: ScheduleType.endDate, times: const [t8], endDate: DateTime(2026, 10, 5)));
-      final doses =
-          engine.generate(t, from: DateTime(2026, 10, 1), to: DateTime(2027));
+      final t = _t(
+        ScheduleRule(
+          type: ScheduleType.endDate,
+          times: const [t8],
+          endDate: DateTime(2026, 10, 5),
+        ),
+      );
+      final doses = engine.generate(
+        t,
+        from: DateTime(2026, 10, 1),
+        to: DateTime(2027),
+      );
       expect(doses.length, 3);
     });
 
@@ -91,35 +121,50 @@ void main() {
 
   group('Intervalo de horas', () {
     test('a cada 8h gera 3 doses por dia', () {
-      final t = _t(const ScheduleRule(
-          type: ScheduleType.intervalHours, times: [DoseTime(6, 0)], intervalHours: 8));
+      final t = _t(
+        const ScheduleRule(
+          type: ScheduleType.intervalHours,
+          times: [DoseTime(6, 0)],
+          intervalHours: 8,
+        ),
+      );
       final doses = engine.forDay([t], DateTime(2026, 10, 4));
       expect(doses.map((d) => d.scheduledAt.hour), [6, 14, 22]);
     });
 
     test('a cada 12h com duração de 3 dias = 6 doses', () {
-      final t = _t(const ScheduleRule(
+      final t = _t(
+        const ScheduleRule(
           type: ScheduleType.intervalHours,
           times: [t8],
           intervalHours: 12,
-          durationDays: 3));
+          durationDays: 3,
+        ),
+      );
       expect(
-          engine
-              .generate(t, from: DateTime(2026, 10, 1), to: DateTime(2027))
-              .length,
-          6);
+        engine
+            .generate(t, from: DateTime(2026, 10, 1), to: DateTime(2027))
+            .length,
+        6,
+      );
     });
   });
 
   group('Ciclos', () {
     const rule21 = ScheduleRule(
-        type: ScheduleType.cycle, times: [DoseTime(9, 0)], usageDays: 21, pauseDays: 7);
+      type: ScheduleType.cycle,
+      times: [DoseTime(9, 0)],
+      usageDays: 21,
+      pauseDays: 7,
+    );
 
     test('21 + 7: 21 dias de uso por ciclo de 28', () {
       final t = _t(rule21);
-      final doses = engine.generate(t,
-          from: DateTime(2026, 10, 3),
-          to: DateTime(2026, 10, 3).add(const Duration(days: 28)));
+      final doses = engine.generate(
+        t,
+        from: DateTime(2026, 10, 3),
+        to: DateTime(2026, 10, 3).add(const Duration(days: 28)),
+      );
       expect(doses.length, 21);
     });
 
@@ -142,42 +187,67 @@ void main() {
     });
 
     test('ciclo sem repetição termina após o primeiro', () {
-      final t = _t(const ScheduleRule(
+      final t = _t(
+        const ScheduleRule(
           type: ScheduleType.cycle,
           times: [t8],
           usageDays: 21,
           pauseDays: 7,
-          repeat: false));
-      final doses =
-          engine.generate(t, from: DateTime(2026, 10, 1), to: DateTime(2027));
+          repeat: false,
+        ),
+      );
+      final doses = engine.generate(
+        t,
+        from: DateTime(2026, 10, 1),
+        to: DateTime(2027),
+      );
       expect(doses.length, 21);
     });
 
     test('24 + 4', () {
-      final t = _t(const ScheduleRule(
-          type: ScheduleType.cycle, times: [t8], usageDays: 24, pauseDays: 4));
-      final doses = engine.generate(t,
-          from: DateTime(2026, 10, 3),
-          to: DateTime(2026, 10, 3).add(const Duration(days: 56)));
+      final t = _t(
+        const ScheduleRule(
+          type: ScheduleType.cycle,
+          times: [t8],
+          usageDays: 24,
+          pauseDays: 4,
+        ),
+      );
+      final doses = engine.generate(
+        t,
+        from: DateTime(2026, 10, 3),
+        to: DateTime(2026, 10, 3).add(const Duration(days: 56)),
+      );
       expect(doses.length, 48);
     });
 
     test('contínuo (sem pausa) usa todos os dias', () {
-      final t = _t(const ScheduleRule(
-          type: ScheduleType.cycle, times: [t8], usageDays: 28, pauseDays: 0));
-      final doses = engine.generate(t,
-          from: DateTime(2026, 10, 3),
-          to: DateTime(2026, 10, 3).add(const Duration(days: 60)));
+      final t = _t(
+        const ScheduleRule(
+          type: ScheduleType.cycle,
+          times: [t8],
+          usageDays: 28,
+          pauseDays: 0,
+        ),
+      );
+      final doses = engine.generate(
+        t,
+        from: DateTime(2026, 10, 3),
+        to: DateTime(2026, 10, 3).add(const Duration(days: 60)),
+      );
       expect(doses.length, 60);
     });
   });
 
   group('Se necessário', () {
     test('nunca gera doses automáticas', () {
-      final t = _t(const ScheduleRule(type: ScheduleType.asNeeded, times: [t8]));
+      final t = _t(
+        const ScheduleRule(type: ScheduleType.asNeeded, times: [t8]),
+      );
       expect(
-          engine.generate(t, from: DateTime(2026, 10, 1), to: DateTime(2027)),
-          isEmpty);
+        engine.generate(t, from: DateTime(2026, 10, 1), to: DateTime(2027)),
+        isEmpty,
+      );
     });
   });
 

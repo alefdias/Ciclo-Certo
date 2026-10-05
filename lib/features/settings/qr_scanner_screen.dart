@@ -51,10 +51,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       body: Stack(
         children: [
           // Visualizador da Câmera
-          MobileScanner(
-            controller: _controller,
-            onDetect: _onDetect,
-          ),
+          MobileScanner(controller: _controller, onDetect: _onDetect),
 
           // Máscara com Recorte Central para Leitura
           SafeArea(
@@ -62,8 +59,10 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
               children: [
                 // Top Bar
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -87,8 +86,9 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                         children: [
                           IconButton.filledTonal(
                             style: IconButton.styleFrom(
-                              backgroundColor:
-                                  Colors.black.withValues(alpha: 0.5),
+                              backgroundColor: Colors.black.withValues(
+                                alpha: 0.5,
+                              ),
                               foregroundColor: Colors.white,
                             ),
                             onPressed: () => _controller.toggleTorch(),
@@ -97,8 +97,9 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                           const SizedBox(width: 8),
                           IconButton.filledTonal(
                             style: IconButton.styleFrom(
-                              backgroundColor:
-                                  Colors.black.withValues(alpha: 0.5),
+                              backgroundColor: Colors.black.withValues(
+                                alpha: 0.5,
+                              ),
                               foregroundColor: Colors.white,
                             ),
                             onPressed: () => _controller.switchCamera(),
@@ -119,10 +120,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                     height: 260,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: AppColors.violet,
-                        width: 3,
-                      ),
+                      border: Border.all(color: AppColors.violet, width: 3),
                       boxShadow: [
                         BoxShadow(
                           color: AppColors.violet.withValues(alpha: 0.25),
@@ -136,8 +134,10 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
                 const SizedBox(height: 24),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.7),
                     borderRadius: BorderRadius.circular(20),

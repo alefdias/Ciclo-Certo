@@ -30,7 +30,8 @@ class StockScreen extends ConsumerWidget {
             const EmptyState(
               icon: Icons.inventory_2_outlined,
               title: 'Nenhum estoque cadastrado',
-              subtitle: 'Ao cadastrar cartelas ou métodos, você pode definir a quantidade de pílulas ou itens.',
+              subtitle:
+                  'Ao cadastrar cartelas ou métodos, você pode definir a quantidade de pílulas ou itens.',
             )
           else ...[
             for (final stock in stocks) ...[
@@ -59,7 +60,8 @@ class _StockItemCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final stockRepo = ref.watch(stockRepositoryProvider);
     final capacity = stock.totalCapacity ?? stock.quantity;
-    final progress = capacity > 0 ? (stock.quantity / capacity).clamp(0.0, 1.0) : 1.0;
+    final progress =
+        capacity > 0 ? (stock.quantity / capacity).clamp(0.0, 1.0) : 1.0;
     final isLow = stock.isLow;
 
     return AppCard(
@@ -78,7 +80,9 @@ class _StockItemCard extends ConsumerWidget {
                     Text(
                       medication.displayName,
                       style: const TextStyle(
-                          fontWeight: FontWeight.w700, fontSize: 16),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -98,24 +102,24 @@ class _StockItemCard extends ConsumerWidget {
                   Text(
                     '${stock.quantity.toInt()} ${medication.form.unit}s',
                     style: const TextStyle(
-                        fontWeight: FontWeight.w800, fontSize: 16),
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                    ),
                   ),
                   if (stock.totalCapacity != null)
                     Text(
                       'de ${stock.totalCapacity!.toInt()}',
                       style: const TextStyle(
-                          color: AppColors.textSecondary, fontSize: 12),
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
                     ),
                 ],
               ),
             ],
           ),
           const SizedBox(height: 14),
-          GradientProgress(
-            value: progress,
-            height: 10,
-            danger: isLow,
-          ),
+          GradientProgress(value: progress, height: 10, danger: isLow),
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -123,7 +127,9 @@ class _StockItemCard extends ConsumerWidget {
               Text(
                 'Alerta quando restar: ${stock.lowStockLimit.toInt()} un.',
                 style: const TextStyle(
-                    color: AppColors.textSecondary, fontSize: 12),
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                ),
               ),
               Row(
                 children: [

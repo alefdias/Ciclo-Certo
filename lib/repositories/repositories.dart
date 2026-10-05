@@ -10,10 +10,9 @@ class MedicationRepository {
   MedicationRepository(this._db);
   final AppDatabase _db;
 
-  Stream<List<Medication>> watchAll() => (_db.select(_db.medications)
-        ..orderBy([(m) => OrderingTerm.asc(m.name)]))
-      .watch()
-      .map((rows) => rows.map((r) => r.toDomain()).toList());
+  Stream<List<Medication>> watchAll() => (_db.select(_db.medications)..orderBy([
+    (m) => OrderingTerm.asc(m.name),
+  ])).watch().map((rows) => rows.map((r) => r.toDomain()).toList());
 
   Future<bool> isEmpty() async {
     final count = _db.medications.id.count();
@@ -28,8 +27,12 @@ class MedicationRepository {
     Stock? stock,
   }) {
     return _db.transaction(() async {
-      await _db.into(_db.medications).insertOnConflictUpdate(medication.toCompanion());
-      await _db.into(_db.treatments).insertOnConflictUpdate(treatment.toCompanion());
+      await _db
+          .into(_db.medications)
+          .insertOnConflictUpdate(medication.toCompanion());
+      await _db
+          .into(_db.treatments)
+          .insertOnConflictUpdate(treatment.toCompanion());
       if (stock != null) {
         await _db.into(_db.stocks).insertOnConflictUpdate(stock.toCompanion());
       }
@@ -37,17 +40,36 @@ class MedicationRepository {
   }
 
   Future<void> delete(String medicationId) =>
-      (_db.delete(_db.medications)..where((m) => m.id.equals(medicationId))).go();
+      (_db.delete(_db.medications)
+        ..where((m) => m.id.equals(medicationId))).go();
+
+  /// Deleta completamente o medicamento, tratamentos, estoques e registros de doses associados
+  Future<void> deleteFull(String medicationId) {
+    return _db.transaction(() async {
+      final treatments =
+          await (_db.select(_db.treatments)
+            ..where((t) => t.medicationId.equals(medicationId))).get();
+      for (final t in treatments) {
+        await (_db.delete(_db.doseRecords)
+          ..where((d) => d.treatmentId.equals(t.id))).go();
+      }
+      await (_db.delete(_db.treatments)
+        ..where((t) => t.medicationId.equals(medicationId))).go();
+      await (_db.delete(_db.stocks)
+        ..where((s) => s.medicationId.equals(medicationId))).go();
+      await (_db.delete(_db.medications)
+        ..where((m) => m.id.equals(medicationId))).go();
+    });
+  }
 }
 
 class TreatmentRepository {
   TreatmentRepository(this._db);
   final AppDatabase _db;
 
-  Stream<List<Treatment>> watchActive() => (_db.select(_db.treatments)
-        ..where((t) => t.status.equals(TreatmentStatus.active.name)))
-      .watch()
-      .map((rows) => rows.map((r) => r.toDomain()).toList());
+  Stream<List<Treatment>> watchActive() => (_db.select(_db.treatments)..where(
+    (t) => t.status.equals(TreatmentStatus.active.name),
+  )).watch().map((rows) => rows.map((r) => r.toDomain()).toList());
 }
 
 class StockRepository {
@@ -75,9 +97,11 @@ class DoseRecordRepository {
 
   Stream<List<DoseRecord>> watchBetween(DateTime from, DateTime to) =>
       (_db.select(_db.doseRecords)
-            ..where((r) =>
-                r.scheduledAt.isBiggerOrEqualValue(from) &
-                r.scheduledAt.isSmallerThanValue(to))
+            ..where(
+              (r) =>
+                  r.scheduledAt.isBiggerOrEqualValue(from) &
+                  r.scheduledAt.isSmallerThanValue(to),
+            )
             ..orderBy([(r) => OrderingTerm.desc(r.scheduledAt)]))
           .watch()
           .map((rows) => rows.map((r) => r.toDomain()).toList());
@@ -90,39 +114,41 @@ class DoseRecordRepository {
           .map((rows) => rows.map((r) => r.toDomain()).toList());
 
   Future<DoseRecord?> find(String treatmentId, DateTime scheduledAt) async {
-    final row = await (_db.select(_db.doseRecords)
-          ..where((r) =>
+    final row =
+        await (_db.select(_db.doseRecords)..where(
+          (r) =>
               r.treatmentId.equals(treatmentId) &
-              r.scheduledAt.equals(scheduledAt)))
-        .getSingleOrNull();
+              r.scheduledAt.equals(scheduledAt),
+        )).getSingleOrNull();
     return row?.toDomain();
   }
 
-  Future<void> upsert(DoseRecord record) =>
-      _db.into(_db.doseRecords).insert(
-            DoseRecordsCompanion.insert(
-              id: record.id,
-              treatmentId: record.treatmentId,
-              scheduledAt: record.scheduledAt,
-              takenAt: Value(record.takenAt),
-              quantity: record.quantity,
-              status: record.status.name,
-              note: Value(record.note),
-            ),
-            onConflict: DoUpdate(
-              (_) => DoseRecordsCompanion(
-                takenAt: Value(record.takenAt),
-                status: Value(record.status.name),
-                note: Value(record.note),
-              ),
-              target: [_db.doseRecords.treatmentId, _db.doseRecords.scheduledAt],
-            ),
-          );
+  Future<void> upsert(DoseRecord record) => _db
+      .into(_db.doseRecords)
+      .insert(
+        DoseRecordsCompanion.insert(
+          id: record.id,
+          treatmentId: record.treatmentId,
+          scheduledAt: record.scheduledAt,
+          takenAt: Value(record.takenAt),
+          quantity: record.quantity,
+          status: record.status.name,
+          note: Value(record.note),
+        ),
+        onConflict: DoUpdate(
+          (_) => DoseRecordsCompanion(
+            takenAt: Value(record.takenAt),
+            status: Value(record.status.name),
+            note: Value(record.note),
+          ),
+          target: [_db.doseRecords.treatmentId, _db.doseRecords.scheduledAt],
+        ),
+      );
 
   Future<void> delete(String treatmentId, DateTime scheduledAt) =>
-      (_db.delete(_db.doseRecords)
-            ..where((r) =>
-                r.treatmentId.equals(treatmentId) &
-                r.scheduledAt.equals(scheduledAt)))
-          .go();
+      (_db.delete(_db.doseRecords)..where(
+        (r) =>
+            r.treatmentId.equals(treatmentId) &
+            r.scheduledAt.equals(scheduledAt),
+      )).go();
 }

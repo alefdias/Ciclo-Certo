@@ -22,25 +22,28 @@ class DoseService {
     return _db.transaction(() async {
       final existing = await _records.find(dose.treatmentId, dose.scheduledAt);
       if (existing?.status == DoseStatus.taken) return;
-      await _records.upsert(DoseRecord(
-        id: existing?.id ?? _uuid.v4(),
-        treatmentId: dose.treatmentId,
-        scheduledAt: dose.scheduledAt,
-        takenAt: DateTime.now(),
-        status: DoseStatus.taken,
-        quantity: dose.quantity,
-      ));
+      await _records.upsert(
+        DoseRecord(
+          id: existing?.id ?? _uuid.v4(),
+          treatmentId: dose.treatmentId,
+          scheduledAt: dose.scheduledAt,
+          takenAt: DateTime.now(),
+          status: DoseStatus.taken,
+          quantity: dose.quantity,
+        ),
+      );
       await _stocks.adjust(medicationId, -dose.quantity);
     });
   }
 
-  Future<void> markSkipped(DoseOccurrence dose) => _setStatus(dose, DoseStatus.skipped);
+  Future<void> markSkipped(DoseOccurrence dose) =>
+      _setStatus(dose, DoseStatus.skipped);
 
   Future<void> snooze(DoseOccurrence dose, Duration by) => _setStatus(
-        dose,
-        DoseStatus.snoozed,
-        note: 'Adiado para ${DateTime.now().add(by).toIso8601String()}',
-      );
+    dose,
+    DoseStatus.snoozed,
+    note: 'Adiado para ${DateTime.now().add(by).toIso8601String()}',
+  );
 
   /// Volta a dose para "aguardando" e devolve o estoque, se havia sido tomada.
   Future<void> undo(DoseOccurrence dose, {required String medicationId}) {
@@ -54,15 +57,21 @@ class DoseService {
     });
   }
 
-  Future<void> _setStatus(DoseOccurrence dose, DoseStatus status, {String? note}) async {
+  Future<void> _setStatus(
+    DoseOccurrence dose,
+    DoseStatus status, {
+    String? note,
+  }) async {
     final existing = await _records.find(dose.treatmentId, dose.scheduledAt);
-    await _records.upsert(DoseRecord(
-      id: existing?.id ?? _uuid.v4(),
-      treatmentId: dose.treatmentId,
-      scheduledAt: dose.scheduledAt,
-      status: status,
-      quantity: dose.quantity,
-      note: note,
-    ));
+    await _records.upsert(
+      DoseRecord(
+        id: existing?.id ?? _uuid.v4(),
+        treatmentId: dose.treatmentId,
+        scheduledAt: dose.scheduledAt,
+        status: status,
+        quantity: dose.quantity,
+        note: note,
+      ),
+    );
   }
 }

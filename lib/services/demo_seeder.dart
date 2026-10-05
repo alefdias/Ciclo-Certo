@@ -92,7 +92,10 @@ class DemoSeeder {
           id: id,
           name: m['name'] as String,
           form: PharmaceuticalForm.tablet,
-          category: isCycle ? MedicationCategory.contraceptive : MedicationCategory.continuousUse,
+          category:
+              isCycle
+                  ? MedicationCategory.contraceptive
+                  : MedicationCategory.continuousUse,
         ),
         treatment: Treatment(
           id: uuid.v4(),

@@ -60,8 +60,8 @@ class DoseRecords extends Table {
 
   @override
   List<Set<Column>> get uniqueKeys => [
-        {treatmentId, scheduledAt},
-      ];
+    {treatmentId, scheduledAt},
+  ];
 }
 
 @DataClassName('StockRow')
@@ -103,11 +103,11 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (m) => m.createAll(),
-        beforeOpen: (details) async {
-          await customStatement('PRAGMA foreign_keys = ON');
-        },
-      );
+    onCreate: (m) => m.createAll(),
+    beforeOpen: (details) async {
+      await customStatement('PRAGMA foreign_keys = ON');
+    },
+  );
 }
 
 LazyDatabase _openConnection() {

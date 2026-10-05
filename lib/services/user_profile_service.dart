@@ -6,14 +6,15 @@ enum UserRole {
   partner;
 
   String get label => switch (this) {
-        UserRole.woman => 'Mulher (Usuária Principal)',
-        UserRole.partner => 'Parceiro(a)',
-      };
+    UserRole.woman => 'Mulher (Usuária Principal)',
+    UserRole.partner => 'Parceiro(a)',
+  };
 
   String get description => switch (this) {
-        UserRole.woman => 'Gerencio meu próprio tratamento, pílula e ciclo menstrual.',
-        UserRole.partner => 'Acompanho o ciclo, lembretes e apoio minha parceira.',
-      };
+    UserRole.woman =>
+      'Gerencio meu próprio tratamento, pílula e ciclo menstrual.',
+    UserRole.partner => 'Acompanho o ciclo, lembretes e apoio minha parceira.',
+  };
 }
 
 class UserProfileService {

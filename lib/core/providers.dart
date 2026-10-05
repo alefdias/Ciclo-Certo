@@ -25,49 +25,59 @@ final databaseProvider = Provider<AppDatabase>((ref) {
   return db;
 });
 
-final medicationRepositoryProvider =
-    Provider((ref) => MedicationRepository(ref.watch(databaseProvider)));
-final treatmentRepositoryProvider =
-    Provider((ref) => TreatmentRepository(ref.watch(databaseProvider)));
-final stockRepositoryProvider =
-    Provider((ref) => StockRepository(ref.watch(databaseProvider)));
-final doseRecordRepositoryProvider =
-    Provider((ref) => DoseRecordRepository(ref.watch(databaseProvider)));
+final medicationRepositoryProvider = Provider(
+  (ref) => MedicationRepository(ref.watch(databaseProvider)),
+);
+final treatmentRepositoryProvider = Provider(
+  (ref) => TreatmentRepository(ref.watch(databaseProvider)),
+);
+final stockRepositoryProvider = Provider(
+  (ref) => StockRepository(ref.watch(databaseProvider)),
+);
+final doseRecordRepositoryProvider = Provider(
+  (ref) => DoseRecordRepository(ref.watch(databaseProvider)),
+);
 
 final scheduleEngineProvider = Provider((_) => ScheduleEngine());
 
-final doseServiceProvider = Provider((ref) => DoseService(
-      ref.watch(databaseProvider),
-      ref.watch(doseRecordRepositoryProvider),
-      ref.watch(stockRepositoryProvider),
-    ));
+final doseServiceProvider = Provider(
+  (ref) => DoseService(
+    ref.watch(databaseProvider),
+    ref.watch(doseRecordRepositoryProvider),
+    ref.watch(stockRepositoryProvider),
+  ),
+);
 
 final notificationServiceProvider = Provider((_) => NotificationService());
-
 
 // ---------------------------------------------------------------------------
 // Dados reativos (atualizam sozinhos quando o banco muda)
 // ---------------------------------------------------------------------------
 
 final medicationsProvider = StreamProvider<List<Medication>>(
-    (ref) => ref.watch(medicationRepositoryProvider).watchAll());
+  (ref) => ref.watch(medicationRepositoryProvider).watchAll(),
+);
 
 final activeTreatmentsProvider = StreamProvider<List<Treatment>>(
-    (ref) => ref.watch(treatmentRepositoryProvider).watchActive());
+  (ref) => ref.watch(treatmentRepositoryProvider).watchActive(),
+);
 
 final stocksProvider = StreamProvider<List<Stock>>(
-    (ref) => ref.watch(stockRepositoryProvider).watchAll());
+  (ref) => ref.watch(stockRepositoryProvider).watchAll(),
+);
 
 final recentRecordsProvider = StreamProvider<List<DoseRecord>>(
-    (ref) => ref.watch(doseRecordRepositoryProvider).watchRecent());
+  (ref) => ref.watch(doseRecordRepositoryProvider).watchRecent(),
+);
 
 /// Registros de um dia específico.
-final recordsForDayProvider =
-    StreamProvider.family<List<DoseRecord>, DateTime>((ref, day) {
-  final start = dateOnly(day);
-  final end = DateTime(start.year, start.month, start.day + 1);
-  return ref.watch(doseRecordRepositoryProvider).watchBetween(start, end);
-});
+final recordsForDayProvider = StreamProvider.family<List<DoseRecord>, DateTime>(
+  (ref, day) {
+    final start = dateOnly(day);
+    final end = DateTime(start.year, start.month, start.day + 1);
+    return ref.watch(doseRecordRepositoryProvider).watchBetween(start, end);
+  },
+);
 
 // ---------------------------------------------------------------------------
 // View models
@@ -107,44 +117,47 @@ class DoseItem {
 /// Doses de um dia, combinando motor + banco.
 final dosesForDayProvider =
     Provider.family<AsyncValue<List<DoseItem>>, DateTime>((ref, day) {
-  final meds = ref.watch(medicationsProvider);
-  final treatments = ref.watch(activeTreatmentsProvider);
-  final records = ref.watch(recordsForDayProvider(dateOnly(day)));
-  final engine = ref.watch(scheduleEngineProvider);
+      final meds = ref.watch(medicationsProvider);
+      final treatments = ref.watch(activeTreatmentsProvider);
+      final records = ref.watch(recordsForDayProvider(dateOnly(day)));
+      final engine = ref.watch(scheduleEngineProvider);
 
-  if (meds.hasError) return AsyncError(meds.error!, meds.stackTrace!);
-  if (treatments.hasError) return AsyncError(treatments.error!, treatments.stackTrace!);
-  if (!meds.hasValue || !treatments.hasValue || !records.hasValue) {
-    return const AsyncLoading();
-  }
+      if (meds.hasError) return AsyncError(meds.error!, meds.stackTrace!);
+      if (treatments.hasError)
+        return AsyncError(treatments.error!, treatments.stackTrace!);
+      if (!meds.hasValue || !treatments.hasValue || !records.hasValue) {
+        return const AsyncLoading();
+      }
 
-  final medById = {for (final m in meds.value!) m.id: m};
-  final tById = {for (final t in treatments.value!) t.id: t};
-  final recByKey = {
-    for (final r in records.value!) '${r.treatmentId}@${r.scheduledAt.toIso8601String()}': r,
-  };
+      final medById = {for (final m in meds.value!) m.id: m};
+      final tById = {for (final t in treatments.value!) t.id: t};
+      final recByKey = {
+        for (final r in records.value!)
+          '${r.treatmentId}@${r.scheduledAt.toIso8601String()}': r,
+      };
 
-  final items = <DoseItem>[
-    for (final o in engine.forDay(treatments.value!, day))
-      if (medById[tById[o.treatmentId]?.medicationId] != null)
-        DoseItem(
-          occurrence: o,
-          treatment: tById[o.treatmentId]!,
-          medication: medById[tById[o.treatmentId]!.medicationId]!,
-          record: recByKey[o.key],
-        ),
-  ];
-  return AsyncData(items);
-});
+      final items = <DoseItem>[
+        for (final o in engine.forDay(treatments.value!, day))
+          if (medById[tById[o.treatmentId]?.medicationId] != null)
+            DoseItem(
+              occurrence: o,
+              treatment: tById[o.treatmentId]!,
+              medication: medById[tById[o.treatmentId]!.medicationId]!,
+              record: recByKey[o.key],
+            ),
+      ];
+      return AsyncData(items);
+    });
 
 /// Atalho para hoje.
-final todayDosesProvider =
-    Provider((ref) => ref.watch(dosesForDayProvider(dateOnly(DateTime.now()))));
+final todayDosesProvider = Provider(
+  (ref) => ref.watch(dosesForDayProvider(dateOnly(DateTime.now()))),
+);
 
 /// Mantém as notificações sincronizadas com as doses de hoje.
 final notificationSyncProvider = Provider((ref) {
   final notificationService = ref.watch(notificationServiceProvider);
-  
+
   ref.listen(todayDosesProvider, (previous, next) {
     if (next.hasValue && next.value != null) {
       notificationService.syncNotifications(next.value!);
@@ -176,4 +189,3 @@ final isPartnerModeProvider = Provider<bool>((ref) {
   final role = ref.watch(userRoleProvider).value;
   return role == UserRole.partner;
 });
-

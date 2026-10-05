@@ -3,8 +3,8 @@ import 'enums.dart';
 /// Horário do dia (independente do Flutter, para manter o domínio em Dart puro).
 class DoseTime implements Comparable<DoseTime> {
   const DoseTime(this.hour, this.minute)
-      : assert(hour >= 0 && hour < 24),
-        assert(minute >= 0 && minute < 60);
+    : assert(hour >= 0 && hour < 24),
+      assert(minute >= 0 && minute < 60);
 
   /// Converte "08:30" em [DoseTime].
   factory DoseTime.parse(String value) {
@@ -102,29 +102,34 @@ class ScheduleRule {
   }
 
   Map<String, dynamic> toJson() => {
-        'type': type.name,
-        'times': times.map((t) => t.format()).toList(),
-        if (intervalHours != null) 'intervalHours': intervalHours,
-        if (durationDays != null) 'durationDays': durationDays,
-        if (endDate != null) 'endDate': endDate!.toIso8601String(),
-        if (usageDays != null) 'usageDays': usageDays,
-        if (pauseDays != null) 'pauseDays': pauseDays,
-        'repeat': repeat,
-      };
+    'type': type.name,
+    'times': times.map((t) => t.format()).toList(),
+    if (intervalHours != null) 'intervalHours': intervalHours,
+    if (durationDays != null) 'durationDays': durationDays,
+    if (endDate != null) 'endDate': endDate!.toIso8601String(),
+    if (usageDays != null) 'usageDays': usageDays,
+    if (pauseDays != null) 'pauseDays': pauseDays,
+    'repeat': repeat,
+  };
 
   factory ScheduleRule.fromJson(Map<String, dynamic> json) => ScheduleRule(
-        type: enumFromName(
-            ScheduleType.values, json['type'] as String?, ScheduleType.custom),
-        times: ((json['times'] as List?) ?? const [])
+    type: enumFromName(
+      ScheduleType.values,
+      json['type'] as String?,
+      ScheduleType.custom,
+    ),
+    times:
+        ((json['times'] as List?) ?? const [])
             .map((e) => DoseTime.parse(e as String))
             .toList(),
-        intervalHours: json['intervalHours'] as int?,
-        durationDays: json['durationDays'] as int?,
-        endDate: json['endDate'] == null
+    intervalHours: json['intervalHours'] as int?,
+    durationDays: json['durationDays'] as int?,
+    endDate:
+        json['endDate'] == null
             ? null
             : DateTime.parse(json['endDate'] as String),
-        usageDays: json['usageDays'] as int?,
-        pauseDays: json['pauseDays'] as int?,
-        repeat: (json['repeat'] as bool?) ?? true,
-      );
+    usageDays: json['usageDays'] as int?,
+    pauseDays: json['pauseDays'] as int?,
+    repeat: (json['repeat'] as bool?) ?? true,
+  );
 }

@@ -27,10 +27,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final treatments = ref.watch(activeTreatmentsProvider).valueOrNull ?? const <Treatment>[];
-    final cyclic = treatments
-        .where((t) => t.rule.type == ScheduleType.cycle && (t.rule.pauseDays ?? 0) > 0)
-        .firstOrNull;
+    final isPartner = ref.watch(isPartnerModeProvider);
+    final treatments =
+        ref.watch(activeTreatmentsProvider).valueOrNull ?? const <Treatment>[];
+    final cyclic =
+        treatments
+            .where(
+              (t) =>
+                  t.rule.type == ScheduleType.cycle &&
+                  (t.rule.pauseDays ?? 0) > 0,
+            )
+            .firstOrNull;
     final dayDoses = ref.watch(dosesForDayProvider(_selected));
 
     return Scaffold(
@@ -58,9 +65,21 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     spacing: 16,
                     runSpacing: 8,
                     children: [
-                      _Legend(color: AppColors.dangerSoft, border: AppColors.danger, label: 'Dia de uso'),
-                      _Legend(color: AppColors.pauseSoft, border: AppColors.pause, label: 'Pausa'),
-                      _Legend(color: Color(0xFFEDE9FE), border: AppColors.violet, label: 'Nova cartela'),
+                      _Legend(
+                        color: AppColors.dangerSoft,
+                        border: AppColors.danger,
+                        label: 'Dia de uso',
+                      ),
+                      _Legend(
+                        color: AppColors.pauseSoft,
+                        border: AppColors.pause,
+                        label: 'Pausa',
+                      ),
+                      _Legend(
+                        color: Color(0xFFEDE9FE),
+                        border: AppColors.violet,
+                        label: 'Nova cartela',
+                      ),
                     ],
                   ),
                 ],
@@ -72,16 +91,28 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           dayDoses.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => Text('$e'),
-            data: (items) => items.isEmpty
-                ? const EmptyState(icon: Icons.event_busy_rounded, title: 'Nenhuma dose neste dia')
-                : Column(
-                    children: [
-                      for (final item in items) ...[
-                        _DayDoseTile(item: item, canAct: !_selected.isAfter(dateOnly(DateTime.now()))),
-                        const SizedBox(height: 10),
-                      ],
-                    ],
-                  ),
+            data:
+                (items) =>
+                    items.isEmpty
+                        ? const EmptyState(
+                          icon: Icons.event_busy_rounded,
+                          title: 'Nenhuma dose neste dia',
+                        )
+                        : Column(
+                          children: [
+                            for (final item in items) ...[
+                              _DayDoseTile(
+                                item: item,
+                                canAct:
+                                    !isPartner &&
+                                    !_selected.isAfter(
+                                      dateOnly(DateTime.now()),
+                                    ),
+                              ),
+                              const SizedBox(height: 10),
+                            ],
+                          ],
+                        ),
           ),
         ],
       ),
@@ -106,7 +137,10 @@ class _MonthHeader extends StatelessWidget {
     final label = DateFormat('MMMM yyyy', 'pt_BR').format(month);
     return Row(
       children: [
-        IconButton(onPressed: () => onShift(-1), icon: const Icon(Icons.chevron_left_rounded)),
+        IconButton(
+          onPressed: () => onShift(-1),
+          icon: const Icon(Icons.chevron_left_rounded),
+        ),
         Expanded(
           child: Text(
             label[0].toUpperCase() + label.substring(1),
@@ -114,7 +148,10 @@ class _MonthHeader extends StatelessWidget {
             style: Theme.of(context).textTheme.titleLarge,
           ),
         ),
-        IconButton(onPressed: () => onShift(1), icon: const Icon(Icons.chevron_right_rounded)),
+        IconButton(
+          onPressed: () => onShift(1),
+          icon: const Icon(Icons.chevron_right_rounded),
+        ),
       ],
     );
   }
@@ -150,10 +187,15 @@ class _MonthGrid extends ConsumerWidget {
           children: [
             for (final w in weekdays)
               Expanded(
-                child: Text(w,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                        color: AppColors.textMuted, fontWeight: FontWeight.w600, fontSize: 12)),
+                child: Text(
+                  w,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
               ),
           ],
         ),
@@ -200,18 +242,21 @@ class _MonthGrid extends ConsumerWidget {
                   color: isSelected ? null : bg,
                   gradient: isSelected ? AppColors.brandGradient : null,
                   shape: BoxShape.circle,
-                  border: isToday && !isSelected
-                      ? Border.all(color: AppColors.violet, width: 2)
-                      : null,
+                  border:
+                      isToday && !isSelected
+                          ? Border.all(color: AppColors.violet, width: 2)
+                          : null,
                 ),
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    Text('${day.day}',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: isSelected ? Colors.white : fg,
-                        )),
+                    Text(
+                      '${day.day}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: isSelected ? Colors.white : fg,
+                      ),
+                    ),
                     if (hasDoses && cyclic == null)
                       Positioned(
                         bottom: 5,
@@ -236,7 +281,11 @@ class _MonthGrid extends ConsumerWidget {
 }
 
 class _Legend extends StatelessWidget {
-  const _Legend({required this.color, required this.border, required this.label});
+  const _Legend({
+    required this.color,
+    required this.border,
+    required this.label,
+  });
   final Color color;
   final Color border;
   final String label;
@@ -256,7 +305,13 @@ class _Legend extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 6),
-        Text(label, style: const TextStyle(fontSize: 12.5, color: AppColors.textSecondary)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12.5,
+            color: AppColors.textSecondary,
+          ),
+        ),
       ],
     );
   }
@@ -280,14 +335,28 @@ class _DayDoseTile extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item.medication.displayName, style: const TextStyle(fontWeight: FontWeight.w700)),
-                Text('${DateFormat.Hm().format(item.occurrence.scheduledAt)} · ${item.quantityLabel}',
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                Text(
+                  item.medication.displayName,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                Text(
+                  '${DateFormat.Hm().format(item.occurrence.scheduledAt)} · ${item.quantityLabel}',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
               ],
             ),
           ),
-          if (canAct) StatusChip(status: item.status, late: item.isLate)
-          else const Icon(Icons.schedule_rounded, color: AppColors.textMuted, size: 20),
+          if (canAct)
+            StatusChip(status: item.status, late: item.isLate)
+          else
+            const Icon(
+              Icons.schedule_rounded,
+              color: AppColors.textMuted,
+              size: 20,
+            ),
         ],
       ),
     );

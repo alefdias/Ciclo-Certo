@@ -55,27 +55,60 @@ class CategoryStyle {
   final IconData icon;
 
   static CategoryStyle of(MedicationCategory c) => switch (c) {
-        MedicationCategory.pill =>
-          const CategoryStyle(Color(0xFFEC4899), Color(0xFFFCE7F3), Icons.favorite_rounded),
-        MedicationCategory.injection =>
-          const CategoryStyle(Color(0xFF8B5CF6), Color(0xFFEDE9FE), Icons.vaccines_rounded),
-        MedicationCategory.patch =>
-          const CategoryStyle(Color(0xFFF43F5E), Color(0xFFFFE4E6), Icons.healing_rounded),
-        MedicationCategory.ring =>
-          const CategoryStyle(Color(0xFFD946EF), Color(0xFFFAE8FF), Icons.data_usage_rounded),
-        MedicationCategory.iud =>
-          const CategoryStyle(Color(0xFF14B8A6), Color(0xFFCCFBF1), Icons.device_thermostat_rounded),
-        MedicationCategory.contraceptive =>
-          const CategoryStyle(Color(0xFFEC4899), Color(0xFFFCE7F3), Icons.favorite_rounded),
-        MedicationCategory.continuousUse =>
-          const CategoryStyle(Color(0xFF8B5CF6), Color(0xFFEDE9FE), Icons.loop_rounded),
-        MedicationCategory.painFever =>
-          const CategoryStyle(Color(0xFFEF4444), Color(0xFFFEE2E2), Icons.local_fire_department_rounded),
-        MedicationCategory.antibiotic =>
-          const CategoryStyle(Color(0xFF3B82F6), Color(0xFFDBEAFE), Icons.medication_rounded),
-        MedicationCategory.vitamins =>
-          const CategoryStyle(Color(0xFFF59E0B), Color(0xFFFEF3C7), Icons.wb_sunny_rounded),
-        MedicationCategory.other =>
-          const CategoryStyle(Color(0xFFF59E0B), Color(0xFFFEF3C7), Icons.stars_rounded),
-      };
+    MedicationCategory.pill => const CategoryStyle(
+      Color(0xFFEC4899),
+      Color(0xFFFCE7F3),
+      Icons.favorite_rounded,
+    ),
+    MedicationCategory.injection => const CategoryStyle(
+      Color(0xFF8B5CF6),
+      Color(0xFFEDE9FE),
+      Icons.vaccines_rounded,
+    ),
+    MedicationCategory.patch => const CategoryStyle(
+      Color(0xFFF43F5E),
+      Color(0xFFFFE4E6),
+      Icons.healing_rounded,
+    ),
+    MedicationCategory.ring => const CategoryStyle(
+      Color(0xFFD946EF),
+      Color(0xFFFAE8FF),
+      Icons.data_usage_rounded,
+    ),
+    MedicationCategory.iud => const CategoryStyle(
+      Color(0xFF14B8A6),
+      Color(0xFFCCFBF1),
+      Icons.device_thermostat_rounded,
+    ),
+    MedicationCategory.contraceptive => const CategoryStyle(
+      Color(0xFFEC4899),
+      Color(0xFFFCE7F3),
+      Icons.favorite_rounded,
+    ),
+    MedicationCategory.continuousUse => const CategoryStyle(
+      Color(0xFF8B5CF6),
+      Color(0xFFEDE9FE),
+      Icons.loop_rounded,
+    ),
+    MedicationCategory.painFever => const CategoryStyle(
+      Color(0xFFEF4444),
+      Color(0xFFFEE2E2),
+      Icons.local_fire_department_rounded,
+    ),
+    MedicationCategory.antibiotic => const CategoryStyle(
+      Color(0xFF3B82F6),
+      Color(0xFFDBEAFE),
+      Icons.medication_rounded,
+    ),
+    MedicationCategory.vitamins => const CategoryStyle(
+      Color(0xFFF59E0B),
+      Color(0xFFFEF3C7),
+      Icons.wb_sunny_rounded,
+    ),
+    MedicationCategory.other => const CategoryStyle(
+      Color(0xFFF59E0B),
+      Color(0xFFFEF3C7),
+      Icons.stars_rounded,
+    ),
+  };
 }

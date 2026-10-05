@@ -119,16 +119,25 @@ class _Header extends ConsumerWidget {
                   if (isPartner) ...[
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.violet.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.violet.withValues(alpha: 0.3)),
+                        border: Border.all(
+                          color: AppColors.violet.withValues(alpha: 0.3),
+                        ),
                       ),
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.visibility_rounded, size: 12, color: AppColors.violet),
+                          Icon(
+                            Icons.visibility_rounded,
+                            size: 12,
+                            color: AppColors.violet,
+                          ),
                           SizedBox(width: 4),
                           Text(
                             'Parceiro (Visualização)',
@@ -315,7 +324,10 @@ class _NextDoseCard extends ConsumerWidget {
               if (ref.watch(isPartnerModeProvider))
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 14,
+                    horizontal: 16,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(16),
@@ -324,7 +336,11 @@ class _NextDoseCard extends ConsumerWidget {
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.visibility_rounded, color: Colors.white, size: 20),
+                      Icon(
+                        Icons.visibility_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                       SizedBox(width: 8),
                       Text(
                         'Modo Parceiro · Apenas Visualização',
@@ -500,16 +516,17 @@ class _DoseTile extends ConsumerWidget {
 
     return AppCard(
       padding: const EdgeInsets.all(14),
-      onTap: isPartner
-          ? () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Modo Parceiro: apenas visualização.'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            }
-          : () => showDoseActions(context, ref, item),
+      onTap:
+          isPartner
+              ? () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Modo Parceiro: apenas visualização.'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+              : () => showDoseActions(context, ref, item),
       child: Row(
         children: [
           SizedBox(
@@ -544,7 +561,7 @@ class _DoseTile extends ConsumerWidget {
               ],
             ),
           ),
-          if (!item.isDone)
+          if (!item.isDone && !isPartner)
             IconButton.filledTonal(
               tooltip: 'Tomei',
               style: IconButton.styleFrom(
@@ -697,8 +714,7 @@ class _QuickStats extends ConsumerWidget {
             color: low > 0 ? AppColors.danger : AppColors.success,
             soft: low > 0 ? AppColors.dangerSoft : AppColors.successSoft,
             value: '$low',
-            label:
-                low == 1 ? 'Cartela\nacabando' : 'Cartelas\nacabando',
+            label: low == 1 ? 'Cartela\nacabando' : 'Cartelas\nacabando',
             onTap: () => context.push('/stock'),
           ),
         ),

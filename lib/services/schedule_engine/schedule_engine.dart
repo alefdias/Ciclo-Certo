@@ -11,7 +11,7 @@ import '../../models/schedule_rule.dart';
 /// testá-lo isoladamente (veja `test/schedule_engine_test.dart`).
 class ScheduleEngine {
   ScheduleEngine({Map<ScheduleType, ScheduleStrategy>? strategies})
-      : _strategies = strategies ?? _defaultStrategies;
+    : _strategies = strategies ?? _defaultStrategies;
 
   static final Map<ScheduleType, ScheduleStrategy> _defaultStrategies = {
     ScheduleType.continuous: const DailyTimesStrategy(),
@@ -37,12 +37,16 @@ class ScheduleEngine {
     }
     final strategy = _strategies[treatment.rule.type];
     if (strategy == null) return const [];
-    final result = strategy
-        .generate(treatment, from, to)
-        .where((d) => !d.scheduledAt.isBefore(from) && d.scheduledAt.isBefore(to))
-        .toSet()
-        .toList()
-      ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+    final result =
+        strategy
+            .generate(treatment, from, to)
+            .where(
+              (d) =>
+                  !d.scheduledAt.isBefore(from) && d.scheduledAt.isBefore(to),
+            )
+            .toSet()
+            .toList()
+          ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
     return result;
   }
 
@@ -50,9 +54,7 @@ class ScheduleEngine {
   List<DoseOccurrence> forDay(Iterable<Treatment> treatments, DateTime day) {
     final start = dateOnly(day);
     final end = DateTime(start.year, start.month, start.day + 1);
-    return treatments
-        .expand((t) => generate(t, from: start, to: end))
-        .toList()
+    return treatments.expand((t) => generate(t, from: start, to: end)).toList()
       ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
   }
 }
@@ -134,9 +136,8 @@ class IntervalStrategy extends ScheduleStrategy {
     final firstTime =
         t.rule.times.isEmpty ? const DoseTime(8, 0) : t.rule.times.first;
     final last = lastDayOf(t);
-    final limit = last == null
-        ? to
-        : DateTime(last.year, last.month, last.day + 1);
+    final limit =
+        last == null ? to : DateTime(last.year, last.month, last.day + 1);
     final end = limit.isBefore(to) ? limit : to;
 
     // Avança direto até perto de `from` sem iterar desde o início.
@@ -147,11 +148,13 @@ class IntervalStrategy extends ScheduleStrategy {
     }
     final out = <DoseOccurrence>[];
     while (current.isBefore(end)) {
-      out.add(DoseOccurrence(
-        treatmentId: t.id,
-        scheduledAt: current,
-        quantity: t.dosePerIntake,
-      ));
+      out.add(
+        DoseOccurrence(
+          treatmentId: t.id,
+          scheduledAt: current,
+          quantity: t.dosePerIntake,
+        ),
+      );
       current = current.add(Duration(hours: hours));
     }
     return out;
@@ -238,10 +241,14 @@ class CycleInfo {
         pauseDays: 0,
         isUsageDay: d >= 0,
         daysLeftInPhase: usage > 0 && d >= 0 ? usage - d % usage : 0,
-        nextCycleStart: usage > 0 && d >= 0
-            ? DateTime(start.year, start.month,
-                start.day + (d ~/ usage + 1) * usage)
-            : null,
+        nextCycleStart:
+            usage > 0 && d >= 0
+                ? DateTime(
+                  start.year,
+                  start.month,
+                  start.day + (d ~/ usage + 1) * usage,
+                )
+                : null,
         finished: false,
       );
     }
@@ -263,9 +270,14 @@ class CycleInfo {
     final pos = d % length;
     final finished = !t.rule.repeat && cycleIndex >= 1;
     final inUse = !finished && pos < usage;
-    final nextStart = finished
-        ? null
-        : DateTime(start.year, start.month, start.day + (cycleIndex + 1) * length);
+    final nextStart =
+        finished
+            ? null
+            : DateTime(
+              start.year,
+              start.month,
+              start.day + (cycleIndex + 1) * length,
+            );
 
     return CycleInfo(
       cycleNumber: cycleIndex + 1,

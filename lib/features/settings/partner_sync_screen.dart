@@ -97,6 +97,45 @@ class _PartnerSyncScreenState extends ConsumerState<PartnerSyncScreen> {
     }
   }
 
+  Future<void> _disconnectPartner() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (ctx) => AlertDialog(
+            title: const Text('Desconectar Parceria?'),
+            content: const Text(
+              'Você deixará de receber as atualizações em tempo real da sua parceira.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.danger,
+                ),
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Desconectar'),
+              ),
+            ],
+          ),
+    );
+
+    if (confirmed == true) {
+      await UserProfileService.instance.setPairedPartnerCode('');
+      CloudSyncService.instance.stopListener();
+      if (!mounted) return;
+      setState(() {
+        _pairedCode = null;
+        _partnerInputController.clear();
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Parceria desconectada.')));
+    }
+  }
+
   Future<void> _switchRole(UserRole newRole) async {
     await UserProfileService.instance.setUserRole(newRole);
     if (!mounted) return;
@@ -113,46 +152,92 @@ class _PartnerSyncScreenState extends ConsumerState<PartnerSyncScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Sincronização com Parceiro(a)')),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                // Seletor de Perfil no Topo
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceSoft,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _buildRoleTabButton(
-                          title: 'Sou a Mulher',
-                          isSelected: _role == UserRole.woman,
-                          onTap: () => _switchRole(UserRole.woman),
+      body:
+          _loading
+              ? const Center(child: CircularProgressIndicator())
+              : ListView(
+                padding: const EdgeInsets.all(20),
+                children: [
+                  // Seletor de Perfil no Topo: bloqueado se estiver como Parceiro
+                  if (_role == UserRole.partner)
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.violet.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppColors.violet.withValues(alpha: 0.3),
                         ),
                       ),
-                      Expanded(
-                        child: _buildRoleTabButton(
-                          title: 'Sou o Parceiro',
-                          isSelected: _role == UserRole.partner,
-                          onTap: () => _switchRole(UserRole.partner),
-                        ),
+                      child: const Row(
+                        children: [
+                          Icon(
+                            Icons.lock_rounded,
+                            color: AppColors.violet,
+                            size: 28,
+                          ),
+                          SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Modo Parceiro Ativo 🔒',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: AppColors.violet,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Você está conectado como parceiro. Apenas a sua parceira pode cadastrar e marcar doses.',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceSoft,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _buildRoleTabButton(
+                              title: 'Sou a Mulher',
+                              isSelected: _role == UserRole.woman,
+                              onTap: () => _switchRole(UserRole.woman),
+                            ),
+                          ),
+                          Expanded(
+                            child: _buildRoleTabButton(
+                              title: 'Sou o Parceiro',
+                              isSelected: _role == UserRole.partner,
+                              onTap: () => _switchRole(UserRole.partner),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: 24),
 
-                if (_role == UserRole.woman)
-                  _buildWomanView()
-                else
-                  _buildPartnerView(),
-              ],
-            ),
+                  if (_role == UserRole.woman)
+                    _buildWomanView()
+                  else
+                    _buildPartnerView(),
+                ],
+              ),
     );
   }
 
@@ -169,15 +254,16 @@ class _PartnerSyncScreenState extends ConsumerState<PartnerSyncScreen> {
         decoration: BoxDecoration(
           color: isSelected ? Colors.white : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  )
-                ]
-              : null,
+          boxShadow:
+              isSelected
+                  ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                  : null,
         ),
         child: Text(
           title,
@@ -293,7 +379,7 @@ class _PartnerSyncScreenState extends ConsumerState<PartnerSyncScreen> {
                   icon: const Icon(Icons.copy_rounded, size: 18),
                   label: const Text('Copiar Código'),
                 ),
-              )
+              ),
             ],
           ),
         ),
@@ -307,10 +393,12 @@ class _PartnerSyncScreenState extends ConsumerState<PartnerSyncScreen> {
               Expanded(
                 child: Text(
                   'Você está no controle: você pode revogar o acesso do parceiro a qualquer momento.',
-                  style:
-                      TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
-              )
+              ),
             ],
           ),
         ),
@@ -323,8 +411,11 @@ class _PartnerSyncScreenState extends ConsumerState<PartnerSyncScreen> {
 
     return Column(
       children: [
-        const Icon(Icons.people_alt_rounded,
-            size: 60, color: Color(0xFF6366F1)),
+        const Icon(
+          Icons.people_alt_rounded,
+          size: 60,
+          color: Color(0xFF6366F1),
+        ),
         const SizedBox(height: 16),
         const Text(
           'Acompanhar Parceira',
@@ -376,8 +467,11 @@ class _PartnerSyncScreenState extends ConsumerState<PartnerSyncScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.check_circle_rounded,
-                          color: AppColors.success, size: 20),
+                      const Icon(
+                        Icons.check_circle_rounded,
+                        color: AppColors.success,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -391,6 +485,19 @@ class _PartnerSyncScreenState extends ConsumerState<PartnerSyncScreen> {
                       ),
                     ],
                   ),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.danger,
+                    side: const BorderSide(color: AppColors.danger),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: _disconnectPartner,
+                  icon: const Icon(Icons.link_off_rounded, size: 18),
+                  label: const Text('Desconectar Parceria'),
                 ),
                 const SizedBox(height: 16),
               ],
