@@ -18,6 +18,19 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   bool _isSaving = false;
 
   @override
+  void initState() {
+    super.initState();
+    _checkExistingRole();
+  }
+
+  Future<void> _checkExistingRole() async {
+    final existing = await UserProfileService.instance.getUserRole();
+    if (existing != null && mounted) {
+      GoRouter.of(context).go('/');
+    }
+  }
+
+  @override
   void dispose() {
     _partnerCodeController.dispose();
     super.dispose();

@@ -168,11 +168,45 @@ final todayDosesProvider = Provider(
   (ref) => ref.watch(dosesForDayProvider(dateOnly(DateTime.now()))),
 );
 
-/// Mantém as notificações sincronizadas com as doses de hoje.
+/// Próximas doses dos próximos 7 dias para agendamento seguro de notificações
+final upcomingWeekDosesProvider = Provider<AsyncValue<List<DoseItem>>>((ref) {
+  final meds = ref.watch(medicationsProvider);
+  final treatments = ref.watch(activeTreatmentsProvider);
+  final engine = ref.watch(scheduleEngineProvider);
+
+  if (meds.hasError) return AsyncError(meds.error!, meds.stackTrace!);
+  if (treatments.hasError) return AsyncError(treatments.error!, treatments.stackTrace!);
+  if (!meds.hasValue || !treatments.hasValue) return const AsyncLoading();
+
+  final medById = {for (final m in meds.value!) m.id: m};
+  final activeTreatments = treatments.value!;
+
+  final now = DateTime.now();
+  final end = now.add(const Duration(days: 7));
+
+  final items = <DoseItem>[];
+  for (final t in activeTreatments) {
+    final med = medById[t.medicationId];
+    if (med == null) continue;
+    final occurrences = engine.generate(t, from: now, to: end);
+    for (final o in occurrences) {
+      items.add(DoseItem(
+        occurrence: o,
+        treatment: t,
+        medication: med,
+      ));
+    }
+  }
+
+  items.sort((a, b) => a.occurrence.scheduledAt.compareTo(b.occurrence.scheduledAt));
+  return AsyncData(items);
+});
+
+/// Mantém as notificações sincronizadas com as doses dos próximos 7 dias.
 final notificationSyncProvider = Provider((ref) {
   final notificationService = ref.watch(notificationServiceProvider);
 
-  ref.listen(todayDosesProvider, (previous, next) {
+  ref.listen(upcomingWeekDosesProvider, (previous, next) {
     if (next.hasValue && next.value != null) {
       notificationService.syncNotifications(next.value!);
     }

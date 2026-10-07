@@ -136,17 +136,7 @@ class _PartnerSyncScreenState extends ConsumerState<PartnerSyncScreen> {
     }
   }
 
-  Future<void> _switchRole(UserRole newRole) async {
-    await UserProfileService.instance.setUserRole(newRole);
-    if (!mounted) return;
-    setState(() => _role = newRole);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Perfil alterado para: ${newRole.label}'),
-        backgroundColor: AppColors.violet,
-      ),
-    );
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -158,7 +148,6 @@ class _PartnerSyncScreenState extends ConsumerState<PartnerSyncScreen> {
               : ListView(
                 padding: const EdgeInsets.all(20),
                 children: [
-                  // Seletor de Perfil no Topo: bloqueado se estiver como Parceiro
                   if (_role == UserRole.partner)
                     Container(
                       padding: const EdgeInsets.all(16),
@@ -205,26 +194,43 @@ class _PartnerSyncScreenState extends ConsumerState<PartnerSyncScreen> {
                     )
                   else
                     Container(
-                      padding: const EdgeInsets.all(4),
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceSoft,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.border),
+                        color: AppColors.violet.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppColors.violet.withValues(alpha: 0.3),
+                        ),
                       ),
-                      child: Row(
+                      child: const Row(
                         children: [
-                          Expanded(
-                            child: _buildRoleTabButton(
-                              title: 'Sou a Mulher',
-                              isSelected: _role == UserRole.woman,
-                              onTap: () => _switchRole(UserRole.woman),
-                            ),
+                          Icon(
+                            Icons.lock_rounded,
+                            color: AppColors.violet,
+                            size: 28,
                           ),
+                          SizedBox(width: 14),
                           Expanded(
-                            child: _buildRoleTabButton(
-                              title: 'Sou o Parceiro',
-                              isSelected: _role == UserRole.partner,
-                              onTap: () => _switchRole(UserRole.partner),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Modo Titular (Mulher) Ativo 🌸🔒',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: AppColors.violet,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Você é a titular desta conta. Seus tratamentos, ciclo e dados médicos são controlados exclusivamente por você.',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -241,42 +247,7 @@ class _PartnerSyncScreenState extends ConsumerState<PartnerSyncScreen> {
     );
   }
 
-  Widget _buildRoleTabButton({
-    required String title,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-          boxShadow:
-              isSelected
-                  ? [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                  : null,
-        ),
-        child: Text(
-          title,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-            color: isSelected ? AppColors.violet : AppColors.textSecondary,
-          ),
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildWomanView() {
     return Column(

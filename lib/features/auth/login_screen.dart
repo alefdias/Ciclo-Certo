@@ -660,14 +660,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: 12),
 
-            // Opção para modo offline / desenvolvimento
-            TextButton(
-              onPressed: _navigatePostAuth,
-              child: const Text(
-                'Continuar como convidado (offline)',
-                style: TextStyle(color: AppColors.textMuted, fontSize: 13),
-              ),
-            ),
+
           ],
           const SizedBox(height: 24),
         ],

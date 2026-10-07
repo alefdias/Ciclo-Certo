@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
 import 'cloud_sync_service.dart';
@@ -85,6 +86,56 @@ class ZapCicloService {
         });
   }
 
+  Stream<DocumentSnapshot<Map<String, dynamic>>> streamCoupleDoc(
+    String pairingCode,
+  ) {
+    return _firestore.collection('couples').doc(pairingCode).snapshots();
+  }
+
+  /// Atualiza o status online/offline e última atividade da pessoa
+  Future<void> updatePresence({
+    required String pairingCode,
+    required String role,
+    required bool isOnline,
+  }) async {
+    try {
+      final fieldPrefix = role == 'partner' ? 'partner' : 'woman';
+      await _firestore.collection('couples').doc(pairingCode).set({
+        '${fieldPrefix}Online': isOnline,
+        '${fieldPrefix}LastSeen': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('Erro ao atualizar presença no ZapCiclo: $e');
+    }
+  }
+
+  /// Marca mensagens recebidas como lidas quando a tela de chat está aberta
+  Future<void> markMessagesAsRead({
+    required String pairingCode,
+    required String myRole,
+  }) async {
+    try {
+      final snapshot = await _firestore
+          .collection('couples')
+          .doc(pairingCode)
+          .collection('chat_messages')
+          .where('senderRole', isNotEqualTo: myRole)
+          .where('isRead', isEqualTo: false)
+          .limit(50)
+          .get();
+
+      if (snapshot.docs.isEmpty) return;
+
+      final batch = _firestore.batch();
+      for (final doc in snapshot.docs) {
+        batch.update(doc.reference, {'isRead': true});
+      }
+      await batch.commit();
+    } catch (e) {
+      debugPrint('Erro ao marcar mensagens como lidas: $e');
+    }
+  }
+
   Future<void> sendMessage({required String text}) async {
     final cleanText = text.trim();
     if (cleanText.isEmpty) return;
@@ -110,6 +161,7 @@ class ZapCicloService {
       senderName: name,
       senderId: user?.uid ?? 'anon',
       sentAt: now,
+      isRead: false,
     );
 
     final msgMap = message.toMap();

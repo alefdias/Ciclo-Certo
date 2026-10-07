@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -13,20 +14,24 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   Future<void> initialize() async {
-    tz.initializeTimeZones();
-    tz.setLocalLocation(tz.getLocation('America/Sao_Paulo'));
+    try {
+      tz.initializeTimeZones();
+      tz.setLocalLocation(tz.getLocation('America/Sao_Paulo'));
+    } catch (e) {
+      debugPrint('Aviso de fuso horário no NotificationService: $e');
+    }
 
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
-    final DarwinInitializationSettings initializationSettingsDarwin =
+    const DarwinInitializationSettings initializationSettingsDarwin =
         DarwinInitializationSettings(
           requestAlertPermission: true,
           requestBadgePermission: true,
           requestSoundPermission: true,
         );
-    final LinuxInitializationSettings initializationSettingsLinux =
+    const LinuxInitializationSettings initializationSettingsLinux =
         LinuxInitializationSettings(defaultActionName: 'Open notification');
-    final InitializationSettings initializationSettings =
+    const InitializationSettings initializationSettings =
         InitializationSettings(
           android: initializationSettingsAndroid,
           iOS: initializationSettingsDarwin,
@@ -37,19 +42,67 @@ class NotificationService {
     await _plugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (details) {
-        // Lógica ao clicar na notificação
+        // Ação ao tocar na notificação
       },
     );
+
+    await requestPermissions();
   }
 
-  /// Exibe uma notificação imediata (ex: quando parceira toma o remédio)
+  /// Solicita permissões explicitamente no Android (POST_NOTIFICATIONS e alarmes exatos)
+  Future<void> requestPermissions() async {
+    final androidImplementation = _plugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+
+    if (androidImplementation != null) {
+      try {
+        await androidImplementation.requestNotificationsPermission();
+      } catch (e) {
+        debugPrint('Erro ao solicitar permissão de notificações: $e');
+      }
+
+      try {
+        await androidImplementation.requestExactAlarmsPermission();
+      } catch (e) {
+        debugPrint('Erro ao solicitar permissão de alarmes exatos: $e');
+      }
+
+      // Cria canais de notificação no Android com importância máxima e som
+      const AndroidNotificationChannel doseChannel = AndroidNotificationChannel(
+        'dose_channel',
+        'Lembretes de Doses',
+        description: 'Notificações sonoras para lembrar de tomar medicamentos',
+        importance: Importance.max,
+        playSound: true,
+        enableVibration: true,
+      );
+
+      const AndroidNotificationChannel partnerChannel = AndroidNotificationChannel(
+        'partner_updates_channel',
+        'Avisos da Parceira',
+        description: 'Notificações em tempo real sobre medicamentos e ZapCiclo',
+        importance: Importance.max,
+        playSound: true,
+        enableVibration: true,
+      );
+
+      try {
+        await androidImplementation.createNotificationChannel(doseChannel);
+        await androidImplementation.createNotificationChannel(partnerChannel);
+      } catch (e) {
+        debugPrint('Erro ao criar canais de notificação: $e');
+      }
+    }
+  }
+
+  /// Exibe uma notificação imediata (ex: ZapCiclo ou parceira tomou remédio)
   Future<void> showImmediateNotification({
     required int id,
     required String title,
     required String body,
   }) async {
-    const AndroidNotificationDetails
-    androidDetails = AndroidNotificationDetails(
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'partner_updates_channel',
       'Avisos da Parceira',
       channelDescription:
@@ -57,6 +110,8 @@ class NotificationService {
       importance: Importance.max,
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
+      playSound: true,
+      enableVibration: true,
     );
     const NotificationDetails details = NotificationDetails(
       android: androidDetails,
@@ -67,7 +122,7 @@ class NotificationService {
       ),
     );
 
-    await _plugin.show(id, title, body, details);
+    await _plugin.show(id % 2147483647, title, body, details);
   }
 
   Future<void> scheduleDoseNotification(DoseItem dose) async {
@@ -75,7 +130,7 @@ class NotificationService {
     if (dose.occurrence.scheduledAt.isBefore(now)) return;
     if (dose.isDone) return;
 
-    final id = dose.occurrence.hashCode.abs();
+    final id = (dose.occurrence.hashCode.abs()) % 2147483647;
 
     // Converte DateTime local para TZDateTime
     final scheduledDate = tz.TZDateTime.from(
@@ -83,33 +138,63 @@ class NotificationService {
       tz.local,
     );
 
+    if (scheduledDate.isBefore(tz.TZDateTime.now(tz.local))) return;
+
     const AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
           'dose_channel',
           'Lembretes de Doses',
           channelDescription:
-              'Canal de notificações para lembrar de tomar medicamentos',
+              'Notificações sonoras para lembrar de tomar medicamentos',
           importance: Importance.max,
           priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+          playSound: true,
+          enableVibration: true,
+          fullScreenIntent: true,
+          category: AndroidNotificationCategory.reminder,
         );
     const NotificationDetails details = NotificationDetails(
       android: androidDetails,
-      iOS: DarwinNotificationDetails(),
+      iOS: DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      ),
     );
 
-    await _plugin.zonedSchedule(
-      id,
-      'Hora do medicamento!',
-      'É hora de tomar ${dose.medication.displayName}.',
-      scheduledDate,
-      details,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.dateAndTime,
-    );
+    final title = 'Hora do remédio! 💊';
+    final body =
+        'É hora de tomar ${dose.medication.displayName} (${dose.quantityLabel}).';
+
+    try {
+      await _plugin.zonedSchedule(
+        id,
+        title,
+        body,
+        scheduledDate,
+        details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      );
+    } catch (e) {
+      debugPrint('Aviso: Tentando agendamento inexato de dose: $e');
+      try {
+        await _plugin.zonedSchedule(
+          id,
+          title,
+          body,
+          scheduledDate,
+          details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        );
+      } catch (err) {
+        debugPrint('Erro ao agendar notificação: $err');
+      }
+    }
   }
 
   Future<void> cancelDoseNotification(DoseItem dose) async {
-    final id = dose.occurrence.hashCode.abs();
+    final id = (dose.occurrence.hashCode.abs()) % 2147483647;
     await _plugin.cancel(id);
   }
 
@@ -119,8 +204,9 @@ class NotificationService {
 
   Future<void> syncNotifications(List<DoseItem> upcomingDoses) async {
     await cancelAll();
+    final now = DateTime.now();
     for (final dose in upcomingDoses) {
-      if (dose.occurrence.scheduledAt.isAfter(DateTime.now()) && !dose.isDone) {
+      if (dose.occurrence.scheduledAt.isAfter(now) && !dose.isDone) {
         await scheduleDoseNotification(dose);
       }
     }

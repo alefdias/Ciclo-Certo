@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -5,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../app/theme/app_colors.dart';
 import '../../core/providers.dart';
 import '../../services/cloud_sync_service.dart';
+import '../../services/user_profile_service.dart';
 import '../../services/zapciclo_service.dart';
 
 class ZapCicloScreen extends ConsumerStatefulWidget {
@@ -19,6 +22,8 @@ class _ZapCicloScreenState extends ConsumerState<ZapCicloScreen> {
   final ScrollController _scrollController = ScrollController();
   String? _pairingCode;
   bool _loading = true;
+  Timer? _presenceTimer;
+  UserRole _myRole = UserRole.woman;
 
   final List<String> _quickPhrases = [
     'Já tomou seu remédio hoje? 💊🌸',
@@ -38,18 +43,49 @@ class _ZapCicloScreenState extends ConsumerState<ZapCicloScreen> {
   }
 
   Future<void> _initCode() async {
+    final role = await UserProfileService.instance.getUserRole();
     final code = await ZapCicloService.instance.getPairingCode();
     if (mounted) {
       setState(() {
+        _myRole = role ?? UserRole.woman;
         _pairingCode = code;
         _loading = false;
       });
+      _startPresence();
     }
+  }
+
+  void _startPresence() {
+    if (_pairingCode == null) return;
+    final roleStr = _myRole == UserRole.partner ? 'partner' : 'woman';
+    ZapCicloService.instance.updatePresence(
+      pairingCode: _pairingCode!,
+      role: roleStr,
+      isOnline: true,
+    );
+    _presenceTimer?.cancel();
+    _presenceTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      if (!mounted || _pairingCode == null) return;
+      ZapCicloService.instance.updatePresence(
+        pairingCode: _pairingCode!,
+        role: roleStr,
+        isOnline: true,
+      );
+    });
   }
 
   @override
   void dispose() {
     ZapCicloService.instance.isChatScreenActive = false;
+    _presenceTimer?.cancel();
+    if (_pairingCode != null) {
+      final roleStr = _myRole == UserRole.partner ? 'partner' : 'woman';
+      ZapCicloService.instance.updatePresence(
+        pairingCode: _pairingCode!,
+        role: roleStr,
+        isOnline: false,
+      );
+    }
     _textController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -144,12 +180,76 @@ class _ZapCicloScreenState extends ConsumerState<ZapCicloScreen> {
                     ],
                   ),
                   const SizedBox(height: 2),
-                  const Text(
-                    'Online em tempo real',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
+                  StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                    stream:
+                        _pairingCode != null
+                            ? ZapCicloService.instance.streamCoupleDoc(
+                              _pairingCode!,
+                            )
+                            : null,
+                    builder: (context, docSnap) {
+                      bool isOtherOnline = false;
+                      DateTime? otherLastSeen;
+
+                      if (docSnap.hasData && docSnap.data?.data() != null) {
+                        final data = docSnap.data!.data()!;
+                        final otherPrefix = isPartner ? 'woman' : 'partner';
+                        final rawOnline =
+                            data['${otherPrefix}Online'] as bool? ?? false;
+                        final rawLastSeen = data['${otherPrefix}LastSeen'];
+
+                        if (rawLastSeen is Timestamp) {
+                          otherLastSeen = rawLastSeen.toDate();
+                        }
+
+                        if (rawOnline && otherLastSeen != null) {
+                          final diffSec =
+                              DateTime.now().difference(otherLastSeen).inSeconds;
+                          if (diffSec < 45) {
+                            isOtherOnline = true;
+                          }
+                        }
+                      }
+
+                      if (isOtherOnline) {
+                        return const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.circle,
+                              size: 7,
+                              color: Color(0xFF22C55E),
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'Online',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF16A34A),
+                              ),
+                            ),
+                          ],
+                        );
+                      } else if (otherLastSeen != null) {
+                        final timeStr = DateFormat.Hm().format(otherLastSeen);
+                        return Text(
+                          'Visto por último às $timeStr',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        );
+                      } else {
+                        return const Text(
+                          'Offline',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        );
+                      }
+                    },
                   ),
                 ],
               ),
@@ -199,6 +299,19 @@ class _ZapCicloScreenState extends ConsumerState<ZapCicloScreen> {
                             }
 
                             final messages = snapshot.data ?? [];
+
+                            if (messages.isNotEmpty && _pairingCode != null) {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                final roleStr =
+                                    _myRole == UserRole.partner
+                                        ? 'partner'
+                                        : 'woman';
+                                ZapCicloService.instance.markMessagesAsRead(
+                                  pairingCode: _pairingCode!,
+                                  myRole: roleStr,
+                                );
+                              });
+                            }
 
                             if (messages.isEmpty) {
                               return _buildEmptyState(isPartner);
@@ -357,10 +470,13 @@ class _ZapCicloScreenState extends ConsumerState<ZapCicloScreen> {
                 ),
                 if (isMe) ...[
                   const SizedBox(width: 4),
-                  const Icon(
+                  Icon(
                     Icons.done_all_rounded,
                     size: 14,
-                    color: Color(0xFF67E8F9),
+                    color:
+                        msg.isRead
+                            ? const Color(0xFF38BDF8)
+                            : Colors.white60,
                   ),
                 ],
               ],
