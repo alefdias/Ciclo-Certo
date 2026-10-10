@@ -203,7 +203,7 @@ class CloudSyncService {
 
                   // Dispara notificação local ao parceiro
                   await NotificationService.instance.showImmediateNotification(
-                    id: doseId.hashCode,
+                    id: NotificationService.stableNotificationId(doseId),
                     title: 'Ciclo Certo: Remédio tomado! 🌸',
                     body: 'Sua parceira acabou de tomar $medName.',
                   );
@@ -244,7 +244,7 @@ class CloudSyncService {
                   }
 
                   await NotificationService.instance.showImmediateNotification(
-                    id: doseId.hashCode + 9999,
+                    id: NotificationService.stableNotificationId('$doseId-delayed'),
                     title: 'Lembrete Carinhoso do Ciclo 🌸',
                     body:
                         'A dose de $medName da sua parceira está com mais de 1h de atraso. Vale a pena lembrá-la com carinho!',

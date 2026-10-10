@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -13,12 +14,46 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
+  static const AndroidNotificationChannel doseChannel =
+      AndroidNotificationChannel(
+        'dose_channel',
+        'Lembretes de Doses',
+        description: 'Notificações sonoras para lembrar de tomar medicamentos',
+        importance: Importance.max,
+        playSound: true,
+        enableVibration: true,
+      );
+
+  static const AndroidNotificationChannel partnerChannel =
+      AndroidNotificationChannel(
+        'partner_updates_channel',
+        'Avisos da Parceira e ZapCiclo',
+        description: 'Notificações em tempo real sobre medicamentos e mensagens',
+        importance: Importance.max,
+        playSound: true,
+        enableVibration: true,
+      );
+
+  /// Gera um ID inteiro de 31 bits estável e determinístico a partir de uma chave textual
+  static int stableNotificationId(String key) {
+    var hash = 5381;
+    for (var i = 0; i < key.length; i++) {
+      hash = ((hash << 5) + hash) + key.codeUnitAt(i);
+    }
+    return hash.abs() % 2147483647;
+  }
+
   Future<void> initialize() async {
+    tz.initializeTimeZones();
     try {
-      tz.initializeTimeZones();
-      tz.setLocalLocation(tz.getLocation('America/Sao_Paulo'));
+      final timezoneInfo = await FlutterTimezone.getLocalTimezone();
+      final String currentTimeZone = timezoneInfo.identifier;
+      tz.setLocalLocation(tz.getLocation(currentTimeZone));
     } catch (e) {
-      debugPrint('Aviso de fuso horário no NotificationService: $e');
+      debugPrint('Aviso ao obter fuso horário no NotificationService: $e');
+      try {
+        tz.setLocalLocation(tz.getLocation('America/Sao_Paulo'));
+      } catch (_) {}
     }
 
     const AndroidInitializationSettings initializationSettingsAndroid =
@@ -46,7 +81,18 @@ class NotificationService {
       },
     );
 
-    await requestPermissions();
+    // Garante criação imediata dos canais no Android
+    final androidImpl = _plugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+    if (androidImpl != null) {
+      try {
+        await androidImpl.createNotificationChannel(doseChannel);
+        await androidImpl.createNotificationChannel(partnerChannel);
+      } catch (e) {
+        debugPrint('Erro ao criar canais de notificação no Android: $e');
+      }
+    }
   }
 
   /// Solicita permissões explicitamente no Android (POST_NOTIFICATIONS e alarmes exatos)
@@ -68,30 +114,11 @@ class NotificationService {
         debugPrint('Erro ao solicitar permissão de alarmes exatos: $e');
       }
 
-      // Cria canais de notificação no Android com importância máxima e som
-      const AndroidNotificationChannel doseChannel = AndroidNotificationChannel(
-        'dose_channel',
-        'Lembretes de Doses',
-        description: 'Notificações sonoras para lembrar de tomar medicamentos',
-        importance: Importance.max,
-        playSound: true,
-        enableVibration: true,
-      );
-
-      const AndroidNotificationChannel partnerChannel = AndroidNotificationChannel(
-        'partner_updates_channel',
-        'Avisos da Parceira',
-        description: 'Notificações em tempo real sobre medicamentos e ZapCiclo',
-        importance: Importance.max,
-        playSound: true,
-        enableVibration: true,
-      );
-
       try {
         await androidImplementation.createNotificationChannel(doseChannel);
         await androidImplementation.createNotificationChannel(partnerChannel);
       } catch (e) {
-        debugPrint('Erro ao criar canais de notificação: $e');
+        debugPrint('Erro ao reassegurar canais de notificação: $e');
       }
     }
   }
@@ -102,16 +129,20 @@ class NotificationService {
     required String title,
     required String body,
   }) async {
+    final safeId = id.abs() % 2147483647;
+
     const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'partner_updates_channel',
-      'Avisos da Parceira',
+      'Avisos da Parceira e ZapCiclo',
       channelDescription:
-          'Notificações em tempo real sobre medicamentos e bem-estar da parceira',
+          'Notificações em tempo real sobre medicamentos e mensagens',
       importance: Importance.max,
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
       playSound: true,
       enableVibration: true,
+      category: AndroidNotificationCategory.message,
+      visibility: NotificationVisibility.public,
     );
     const NotificationDetails details = NotificationDetails(
       android: androidDetails,
@@ -122,7 +153,7 @@ class NotificationService {
       ),
     );
 
-    await _plugin.show(id % 2147483647, title, body, details);
+    await _plugin.show(safeId, title, body, details);
   }
 
   Future<void> scheduleDoseNotification(DoseItem dose) async {
@@ -130,12 +161,16 @@ class NotificationService {
     if (dose.occurrence.scheduledAt.isBefore(now)) return;
     if (dose.isDone) return;
 
-    final id = (dose.occurrence.hashCode.abs()) % 2147483647;
+    final id = stableNotificationId(dose.occurrence.key);
 
-    // Converte DateTime local para TZDateTime
-    final scheduledDate = tz.TZDateTime.from(
-      dose.occurrence.scheduledAt,
+    // Constrói o TZDateTime no fuso local pelos componentes exatos (ano, mês, dia, hora, minuto)
+    final scheduledDate = tz.TZDateTime(
       tz.local,
+      dose.occurrence.scheduledAt.year,
+      dose.occurrence.scheduledAt.month,
+      dose.occurrence.scheduledAt.day,
+      dose.occurrence.scheduledAt.hour,
+      dose.occurrence.scheduledAt.minute,
     );
 
     if (scheduledDate.isBefore(tz.TZDateTime.now(tz.local))) return;
@@ -147,12 +182,12 @@ class NotificationService {
           channelDescription:
               'Notificações sonoras para lembrar de tomar medicamentos',
           importance: Importance.max,
-          priority: Priority.high,
+          priority: Priority.max,
           icon: '@mipmap/ic_launcher',
           playSound: true,
           enableVibration: true,
-          fullScreenIntent: true,
           category: AndroidNotificationCategory.reminder,
+          visibility: NotificationVisibility.public,
         );
     const NotificationDetails details = NotificationDetails(
       android: androidDetails,
@@ -194,7 +229,7 @@ class NotificationService {
   }
 
   Future<void> cancelDoseNotification(DoseItem dose) async {
-    final id = (dose.occurrence.hashCode.abs()) % 2147483647;
+    final id = stableNotificationId(dose.occurrence.key);
     await _plugin.cancel(id);
   }
 

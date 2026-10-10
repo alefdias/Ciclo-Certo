@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/theme/app_colors.dart';
 import '../../services/user_profile_service.dart';
+import '../../services/zapciclo_service.dart';
 import '../settings/qr_scanner_screen.dart';
 
 class RoleSelectionScreen extends StatefulWidget {
@@ -47,6 +48,8 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
           _partnerCodeController.text.trim().toUpperCase(),
         );
       }
+
+      ZapCicloService.instance.startBackgroundNotificationListener();
 
       if (!mounted) return;
 

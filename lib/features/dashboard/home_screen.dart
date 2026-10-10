@@ -10,14 +10,28 @@ import '../../core/widgets/dose_actions.dart';
 import '../../models/enums.dart';
 import '../../models/models.dart';
 import '../../services/cloud_sync_service.dart';
+import '../../services/notification_service.dart';
 import '../../services/schedule_engine/schedule_engine.dart';
 
 /// Tela "Hoje": responde "o que preciso fazer agora?" (§16 e §54).
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      NotificationService.instance.requestPermissions();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     ref.watch(notificationSyncProvider);
     ref.watch(cloudSyncProvider);
     final doses = ref.watch(todayDosesProvider);

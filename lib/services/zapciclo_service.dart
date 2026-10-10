@@ -152,7 +152,7 @@ class ZapCicloService {
             : defaultName;
 
     final msgId = const Uuid().v4();
-    final now = DateTime.now();
+    final now = DateTime.now().toUtc();
 
     final message = ZapMessage(
       id: msgId,
@@ -181,12 +181,12 @@ class ZapCicloService {
     }, SetOptions(merge: true));
   }
 
-  /// Inicia escuta em segundo plano para notificar quando chegar nova mensagem do ZapCiclo
+  /// Inicia escuta em tempo real para notificar quando chegar nova mensagem do ZapCiclo
   void startBackgroundNotificationListener() async {
     _latestMessageSub?.cancel();
     final code = await getPairingCode();
-    final myRole = await UserProfileService.instance.getUserRole();
-    final myRoleStr = myRole == UserRole.partner ? 'partner' : 'woman';
+
+    bool isFirstSnapshot = true;
 
     _latestMessageSub = _firestore
         .collection('couples')
@@ -204,25 +204,35 @@ class ZapCicloService {
             final senderName = map['senderName'] as String? ?? 'Seu Amor';
             final sentAtStr = map['sentAt'] as String?;
 
-            if (msgId != null &&
-                msgId != _lastNotifiedMessageId &&
-                senderRole != null &&
-                senderRole != myRoleStr &&
-                !isChatScreenActive) {
-              _lastNotifiedMessageId = msgId;
+            // Obtém dinamicamente o papel atual para nunca falhar por cache
+            final currentRole = await UserProfileService.instance.getUserRole();
+            final currentRoleStr =
+                currentRole == UserRole.partner ? 'partner' : 'woman';
 
-              // Verifica se a mensagem foi enviada nos últimos 10 minutos
-              final sentAt = DateTime.tryParse(sentAtStr ?? '');
-              if (sentAt != null &&
-                  DateTime.now().difference(sentAt).inMinutes < 10) {
+            if (msgId != null &&
+                senderRole != null &&
+                senderRole != currentRoleStr &&
+                msgId != _lastNotifiedMessageId &&
+                !isChatScreenActive) {
+              final sentAt = DateTime.tryParse(sentAtStr ?? '')?.toUtc();
+              final isVeryRecent = sentAt != null &&
+                  DateTime.now().toUtc().difference(sentAt).inMinutes.abs() < 5;
+
+              // No primeiro snapshot ao abrir o app, só notifica se for dos últimos 5 minutos
+              if (!isFirstSnapshot || isVeryRecent) {
+                _lastNotifiedMessageId = msgId;
+                final notifId = NotificationService.stableNotificationId(msgId);
                 await NotificationService.instance.showImmediateNotification(
-                  id: msgId.hashCode,
+                  id: notifId,
                   title: 'ZapCiclo 💬 ($senderName)',
                   body: text ?? 'Nova mensagem recebida',
                 );
+              } else {
+                _lastNotifiedMessageId = msgId;
               }
             }
           }
+          isFirstSnapshot = false;
         });
   }
 

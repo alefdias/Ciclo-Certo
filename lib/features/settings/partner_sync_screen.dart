@@ -8,6 +8,7 @@ import '../../core/providers.dart';
 import '../../core/widgets/app_widgets.dart';
 import '../../services/cloud_sync_service.dart';
 import '../../services/user_profile_service.dart';
+import '../../services/zapciclo_service.dart';
 import 'qr_scanner_screen.dart';
 
 class PartnerSyncScreen extends ConsumerStatefulWidget {
@@ -54,9 +55,11 @@ class _PartnerSyncScreenState extends ConsumerState<PartnerSyncScreen> {
       final db = ref.read(databaseProvider);
       if (_role == UserRole.woman) {
         CloudSyncService.instance.syncWomanToCloud(db);
+        CloudSyncService.instance.startWomanListener();
       } else {
         CloudSyncService.instance.startPartnerListener(db);
       }
+      ZapCicloService.instance.startBackgroundNotificationListener();
     }
   }
 
@@ -77,6 +80,7 @@ class _PartnerSyncScreenState extends ConsumerState<PartnerSyncScreen> {
     await UserProfileService.instance.setPairedPartnerCode(code);
     final db = ref.read(databaseProvider);
     CloudSyncService.instance.startPartnerListener(db);
+    ZapCicloService.instance.startBackgroundNotificationListener();
 
     if (!mounted) return;
     setState(() => _pairedCode = code);

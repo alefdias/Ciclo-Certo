@@ -173,12 +173,14 @@ final upcomingWeekDosesProvider = Provider<AsyncValue<List<DoseItem>>>((ref) {
   final meds = ref.watch(medicationsProvider);
   final treatments = ref.watch(activeTreatmentsProvider);
   final engine = ref.watch(scheduleEngineProvider);
+  final records = ref.watch(recentRecordsProvider).valueOrNull ?? const [];
 
   if (meds.hasError) return AsyncError(meds.error!, meds.stackTrace!);
   if (treatments.hasError) return AsyncError(treatments.error!, treatments.stackTrace!);
   if (!meds.hasValue || !treatments.hasValue) return const AsyncLoading();
 
   final medById = {for (final m in meds.value!) m.id: m};
+  final recByKey = {for (final r in records) '${r.treatmentId}@${r.scheduledAt.toIso8601String()}': r};
   final activeTreatments = treatments.value!;
 
   final now = DateTime.now();
@@ -194,6 +196,7 @@ final upcomingWeekDosesProvider = Provider<AsyncValue<List<DoseItem>>>((ref) {
         occurrence: o,
         treatment: t,
         medication: med,
+        record: recByKey[o.key],
       ));
     }
   }
@@ -213,7 +216,7 @@ final notificationSyncProvider = Provider((ref) {
   }, fireImmediately: true);
 });
 
-/// Mantém a sincronização em nuvem ativa para casal
+/// Mantém a sincronização em nuvem e ZapCiclo ativos para o casal
 final cloudSyncProvider = Provider((ref) {
   final db = ref.watch(databaseProvider);
 
@@ -222,6 +225,16 @@ final cloudSyncProvider = Provider((ref) {
   });
   ref.listen(todayDosesProvider, (previous, next) {
     CloudSyncService.instance.syncWomanToCloud(db);
+  });
+  ref.listen(userRoleProvider, (previous, next) {
+    if (next.hasValue) {
+      ZapCicloService.instance.startBackgroundNotificationListener();
+      if (next.value == UserRole.partner) {
+        CloudSyncService.instance.startPartnerListener(db);
+      } else {
+        CloudSyncService.instance.startWomanListener();
+      }
+    }
   });
 });
 

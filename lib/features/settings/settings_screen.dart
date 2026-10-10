@@ -9,6 +9,7 @@ import '../../core/providers.dart';
 import '../../core/widgets/app_widgets.dart';
 import '../../services/biometric_service.dart';
 import '../../services/medical_report_service.dart';
+import '../../services/notification_service.dart';
 
 /// Tela de Configurações e Preferências (§29).
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -176,7 +177,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     style: TextStyle(fontSize: 13),
                   ),
                   value: _notifications,
-                  onChanged: (v) => setState(() => _notifications = v),
+                  onChanged: (v) async {
+                    setState(() => _notifications = v);
+                    if (v) {
+                      await NotificationService.instance.requestPermissions();
+                    }
+                  },
                 ),
                 const Divider(),
                 SwitchListTile(
@@ -197,6 +203,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   value: _vibration,
                   onChanged: (v) => setState(() => _vibration = v),
+                ),
+                const Divider(),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(
+                    Icons.notifications_active_rounded,
+                    color: AppColors.teal,
+                  ),
+                  title: const Text(
+                    'Testar Notificação Agora',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: const Text(
+                    'Dispara uma notificação de teste no aparelho',
+                    style: TextStyle(fontSize: 13),
+                  ),
+                  trailing: const Icon(Icons.send_rounded, size: 20, color: AppColors.teal),
+                  onTap: () async {
+                    await NotificationService.instance.requestPermissions();
+                    await NotificationService.instance.showImmediateNotification(
+                      id: 99999,
+                      title: 'Ciclo Certo: Notificações Ativas! 🌸',
+                      body: 'Tudo certo! Seus lembretes de remédio e do parceiro chegarão no horário.',
+                    );
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Notificação de teste enviada! ✓'),
+                          backgroundColor: AppColors.teal,
+                        ),
+                      );
+                    }
+                  },
                 ),
               ],
             ),
